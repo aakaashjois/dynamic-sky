@@ -1,0 +1,1055 @@
+/**
+ * DynamicSky - Dynamic sky background renderer with circular time slider control
+ * 
+ * A vanilla JavaScript library for rendering realistic sky backgrounds with
+ * atmospheric scattering, animated starfields, and an optional circular time slider.
+ * 
+ * Usage:
+ *   <script src="dynamic-sky.js"></script>
+ *   <script>
+ *     const sky = new DynamicSky({
+ *       skyContainer: '#background-sky',
+ *       starsContainer: '#stars-container'
+ *     });
+ *     sky.init();
+ *   </script>
+ * 
+ * @version 1.0.0
+ * @license MIT
+ */
+
+(function (global) {
+  'use strict';
+
+  // ============================================================================
+  // Inject CSS Styles
+  // ============================================================================
+  
+  (function() {
+    // Only inject CSS once
+    if (document.getElementById('dynamic-sky-styles')) return;
+    
+    var css = [
+      '/* Sky Background Container */',
+      '#background-sky {',
+      '  position: fixed;',
+      '  top: 0;',
+      '  left: 0;',
+      '  width: 100vw;',
+      '  height: 100dvh;',
+      '  z-index: -2;',
+      '  pointer-events: none;',
+      '  transition: opacity 0.5s ease-in-out;',
+      '  background-color: #121212;',
+      '  margin: 0;',
+      '  padding: 0;',
+      '}',
+      '',
+      '/* Stars Container */',
+      '#stars-container {',
+      '  position: fixed;',
+      '  top: 0;',
+      '  left: 0;',
+      '  width: 100%;',
+      '  height: 100%;',
+      '  height: 100dvh;',
+      '  overflow: hidden;',
+      '  perspective: 100px;',
+      '  perspective-origin: 50% 50%;',
+      '  z-index: -1;',
+      '  pointer-events: none;',
+      '  transition: opacity 0.5s ease-in-out;',
+      '}',
+      '',
+      '.dynamic-sky-layer {',
+      '  position: absolute;',
+      '  top: 0;',
+      '  left: 0;',
+      '  width: 100%;',
+      '  height: 100%;',
+      '  transform: translateZ(0px);',
+      '}',
+      '',
+      '.dynamic-sky-star {',
+      '  position: absolute;',
+      '  width: 2px;',
+      '  height: 2px;',
+      '  background: #fff;',
+      '  border-radius: 1px;',
+      '}',
+      '',
+      '@media (max-width: 768px) {',
+      '  .dynamic-sky-star {',
+      '    opacity: 0.7;',
+      '  }',
+      '}'
+    ].join('\n');
+    
+    var style = document.createElement('style');
+    style.id = 'dynamic-sky-styles';
+    style.type = 'text/css';
+    if (style.styleSheet) {
+      style.styleSheet.cssText = css;
+    } else {
+      style.appendChild(document.createTextNode(css));
+    }
+    document.head.appendChild(style);
+  })();
+
+  // ============================================================================
+  // SunCalc Auto-Loader
+  // ============================================================================
+  
+  // Promise that resolves when SunCalc is available
+  var sunCalcReadyPromise = null;
+  
+  // Function to ensure SunCalc is loaded
+  function ensureSunCalc() {
+    // If SunCalc is already available, return resolved promise
+    if (typeof global.SunCalc !== 'undefined') {
+      return Promise.resolve();
+    }
+    
+    // If we're already loading, return the existing promise
+    if (sunCalcReadyPromise) {
+      return sunCalcReadyPromise;
+    }
+    
+    // Check if we're in a browser environment
+    if (typeof document === 'undefined') {
+      return Promise.reject(new Error('SunCalc library not found and cannot be auto-loaded in this environment'));
+    }
+    
+    // Create promise for async loading
+    sunCalcReadyPromise = new Promise(function(resolve, reject) {
+      // Try synchronous XHR first (works for same-origin or if CORS allows)
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js', false); // synchronous
+        xhr.send(null);
+        
+        if (xhr.status === 200 || xhr.status === 0) {
+          // Execute the fetched script
+          var script = xhr.responseText;
+          (new Function(script))();
+          
+          // Verify SunCalc was loaded
+          if (typeof global.SunCalc !== 'undefined') {
+            resolve();
+            return;
+          }
+        }
+      } catch (e) {
+        // Synchronous XHR failed (likely CORS), fall back to async script tag
+      }
+      
+      // Fall back to async script tag loading
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js';
+      script.async = true;
+      
+      script.onload = function() {
+        if (typeof global.SunCalc !== 'undefined') {
+          resolve();
+        } else {
+          reject(new Error('SunCalc script loaded but SunCalc object not found'));
+        }
+      };
+      
+      script.onerror = function() {
+        reject(new Error('Failed to load SunCalc from jsdelivr. Please check your network connection or include SunCalc manually.'));
+      };
+      
+      // Append to head or body
+      if (document.head) {
+        document.head.appendChild(script);
+      } else {
+        document.body.appendChild(script);
+      }
+    });
+    
+    return sunCalcReadyPromise;
+  }
+  
+  // Try to preload SunCalc immediately (non-blocking)
+  if (typeof document !== 'undefined' && typeof global.SunCalc === 'undefined') {
+    ensureSunCalc().catch(function(error) {
+      // Silently fail - will retry when init() is called
+      console.warn('DynamicSky: Could not preload SunCalc:', error.message);
+    });
+  }
+
+  // ============================================================================
+  // DynamicSky Library
+  // ============================================================================
+
+  // Utility functions
+  function clamp(x, min, max) {
+    return Math.max(min, Math.min(max, x));
+  }
+
+  function dot(v1, v2) {
+    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+  }
+
+  function len(v) {
+    return Math.hypot(v[0], v[1], v[2]);
+  }
+
+  function norm(v) {
+    const l = len(v) || 1;
+    return [v[0] / l, v[1] / l, v[2] / l];
+  }
+
+  function add(v1, v2) {
+    return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]];
+  }
+
+  function scale(v, s) {
+    return [v[0] * s, v[1] * s, v[2] * s];
+  }
+
+  function exp(v) {
+    return [Math.exp(v[0]), Math.exp(v[1]), Math.exp(v[2])];
+  }
+
+  /**
+   * DynamicSky Class
+   */
+  function DynamicSky(options) {
+    options = options || {};
+    
+    // Default configuration
+    this.config = {
+      // DOM selectors
+      skyContainer: options.skyContainer || '#background-sky',
+      starsContainer: options.starsContainer || '#stars-container',
+      
+      // Location
+      latitude: options.latitude || null,
+      longitude: options.longitude || null,
+      autoDetectLocation: options.autoDetectLocation !== false,
+      
+      // Sky rendering options
+      starLayers: options.starLayers || 3,
+      starDensity: options.starDensity || 5,
+      
+      // Callbacks
+      onUpdate: options.onUpdate || null,
+      onLocationDetected: options.onLocationDetected || null,
+      
+      // Location API
+      locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
+    };
+
+    // Internal state
+    this.skyElement = null;
+    this.starsElement = null;
+    this.starsCreated = false;
+    this.skyState = { diameter: 0 };
+    this.userLatitude = null;
+    this.userLongitude = null;
+    this.isInitialized = false;
+  }
+
+  DynamicSky.prototype.init = function() {
+    if (this.isInitialized) {
+      console.warn('DynamicSky already initialized');
+      return Promise.resolve(this);
+    }
+
+    // Get or create DOM elements
+    this.skyElement = document.querySelector(this.config.skyContainer);
+    this.starsElement = document.querySelector(this.config.starsContainer);
+
+    // Create containers if they don't exist
+    if (!this.skyElement) {
+      this.skyElement = document.createElement('div');
+      if (this.config.skyContainer.indexOf('#') === 0) {
+        // It's an ID selector
+        this.skyElement.id = this.config.skyContainer.substring(1);
+      } else if (this.config.skyContainer.indexOf('.') === 0) {
+        // It's a class selector
+        this.skyElement.className = this.config.skyContainer.substring(1);
+      }
+      document.body.appendChild(this.skyElement);
+    }
+
+    if (!this.starsElement) {
+      this.starsElement = document.createElement('div');
+      if (this.config.starsContainer.indexOf('#') === 0) {
+        // It's an ID selector
+        this.starsElement.id = this.config.starsContainer.substring(1);
+      } else if (this.config.starsContainer.indexOf('.') === 0) {
+        // It's a class selector
+        this.starsElement.className = this.config.starsContainer.substring(1);
+      }
+      document.body.appendChild(this.starsElement);
+    }
+    
+    // Detect if containers are inside another element (not direct children of body)
+    // If so, use absolute positioning instead of fixed
+    var skyParent = this.skyElement.parentElement;
+    var isContained = skyParent && skyParent !== document.body;
+    
+    if (isContained) {
+      // Ensure parent has relative positioning
+      var parentStyle = window.getComputedStyle(skyParent);
+      if (parentStyle.position === 'static') {
+        skyParent.style.position = 'relative';
+      }
+      
+      // Use absolute positioning for contained elements
+      this.skyElement.style.position = 'absolute';
+      this.skyElement.style.top = '0';
+      this.skyElement.style.left = '0';
+      this.skyElement.style.width = '100%';
+      this.skyElement.style.height = '100%';
+      this.skyElement.style.zIndex = '0';
+      this.skyElement.style.backgroundColor = '#121212';
+      this.skyElement.style.pointerEvents = 'none';
+      this.skyElement.style.margin = '0';
+      this.skyElement.style.padding = '0';
+      
+      this.starsElement.style.position = 'absolute';
+      this.starsElement.style.top = '0';
+      this.starsElement.style.left = '0';
+      this.starsElement.style.width = '100%';
+      this.starsElement.style.height = '100%';
+      this.starsElement.style.zIndex = '1';
+      this.starsElement.style.overflow = 'hidden';
+      this.starsElement.style.perspective = '100px';
+      this.starsElement.style.perspectiveOrigin = '50% 50%';
+    } else {
+      // Use fixed positioning for full-page backgrounds
+      this.skyElement.style.position = 'fixed';
+      this.skyElement.style.top = '0';
+      this.skyElement.style.left = '0';
+      this.skyElement.style.width = '100vw';
+      this.skyElement.style.height = '100dvh';
+      this.skyElement.style.zIndex = '-2';
+      
+      this.starsElement.style.position = 'fixed';
+      this.starsElement.style.top = '0';
+      this.starsElement.style.left = '0';
+      this.starsElement.style.width = '100%';
+      this.starsElement.style.height = '100%';
+      this.starsElement.style.height = '100dvh';
+      this.starsElement.style.zIndex = '-1';
+    }
+
+    var self = this;
+    
+    // Return a Promise that resolves after initialization
+    return new Promise(function(resolve, reject) {
+      // Ensure SunCalc is loaded before proceeding
+      ensureSunCalc().then(function() {
+        // Detect or use provided location
+        if (self.config.autoDetectLocation && (!self.config.latitude || !self.config.longitude)) {
+          self.detectLocation().then(function() {
+            self._initialRender();
+            resolve(self);
+          }).catch(function(error) {
+            // Even if location detection fails, use fallback and continue
+            self.userLatitude = 37.77;
+            self.userLongitude = -122.41;
+            self._initialRender();
+            resolve(self);
+          });
+        } else {
+          self.userLatitude = self.config.latitude || 37.77;
+          self.userLongitude = self.config.longitude || -122.41;
+          self._initialRender();
+          resolve(self);
+        }
+      }).catch(function(error) {
+        console.error('DynamicSky: Failed to load SunCalc:', error.message);
+        console.error('Please include SunCalc manually: <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js"></script>');
+        reject(error);
+      });
+    });
+  };
+
+  DynamicSky.prototype._initialRender = function() {
+    // Initial render
+    this.updateSky();
+
+    this.isInitialized = true;
+    
+    // Dispatch event
+    var event = new CustomEvent('dynamic-sky-initialized', { 
+      detail: { 
+        latitude: this.userLatitude, 
+        longitude: this.userLongitude 
+      } 
+    });
+    document.dispatchEvent(event);
+  };
+
+  DynamicSky.prototype.detectLocation = function() {
+    var self = this;
+    return fetch(this.config.locationApiUrl)
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('API request failed with status ' + response.status);
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        if (!data.success) {
+          throw new Error('API response indicates failure');
+        }
+        self.userLatitude = data.latitude;
+        self.userLongitude = data.longitude;
+        
+        if (self.config.onLocationDetected) {
+          self.config.onLocationDetected(self.userLatitude, self.userLongitude);
+        }
+      })
+      .catch(function(error) {
+        console.error('DynamicSky: Error getting location from IP API, using fallback:', error);
+        self.userLatitude = 37.77;
+        self.userLongitude = -122.41;
+      });
+  };
+
+  DynamicSky.prototype.updateSkyGeometry = function() {
+    // Check if container is inside another element
+    var skyParent = this.skyElement ? this.skyElement.parentElement : null;
+    var isContained = skyParent && skyParent !== document.body;
+    
+    if (isContained) {
+      // For contained elements, use the container's dimensions
+      var rect = skyParent.getBoundingClientRect();
+      var winW = rect.width;
+      var winH = rect.height;
+    } else {
+      // For full-page backgrounds, use viewport dimensions
+      var winW = window.innerWidth;
+      var winH = window.innerHeight;
+    }
+    
+    // Store dimensions for use in createSky
+    this.skyState.width = winW;
+    this.skyState.height = winH;
+    // Star field will be w*2 x h*2 centered on pivot point (10% below container)
+    this.skyState.starFieldWidth = winW * 2;
+    this.skyState.starFieldHeight = winH * 2;
+    // Use the larger dimension for diameter calculation
+    this.skyState.diameter = Math.max(this.skyState.starFieldWidth, this.skyState.starFieldHeight);
+  };
+
+  DynamicSky.prototype.createSky = function() {
+    if (this.starsCreated || !this.starsElement) {
+      return;
+    }
+
+    this.updateSkyGeometry();
+    var diameter = this.skyState.diameter;
+    
+    // Check if container is inside another element
+    var skyParent = this.skyElement ? this.skyElement.parentElement : null;
+    var isContained = skyParent && skyParent !== document.body;
+    
+    // Store these for use in nested functions
+    var self = this;
+
+    if (isContained) {
+      // For contained elements, use container dimensions for stars
+      var rect = skyParent.getBoundingClientRect();
+      var containerWidth = rect.width;
+      var containerHeight = rect.height;
+      
+      // Ensure container has dimensions, otherwise wait and retry
+      if (containerWidth === 0 || containerHeight === 0) {
+        var self = this;
+        setTimeout(function() {
+          self.createSky();
+        }, 100);
+        return;
+      }
+      
+      // Pivot point is at 10% of container height BELOW the container
+      // So pivot is at: (containerWidth/2, containerHeight + 0.1*containerHeight) = (w/2, 1.1*h)
+      // Star field should be w*2 x h*2 centered on this pivot point
+      var starFieldWidth = containerWidth * 2;
+      var starFieldHeight = containerHeight * 2;
+      diameter = Math.max(starFieldWidth, starFieldHeight);
+      // Store star field dimensions for star distribution
+      this.skyState.starFieldWidth = starFieldWidth;
+      this.skyState.starFieldHeight = starFieldHeight;
+      
+      // Position star field so pivot point is at its center
+      // Pivot point relative to container: (w/2, 1.1*h)
+      // Star field center should be at pivot, so star field top-left relative to container:
+      // left: w/2 - starFieldWidth/2 = w/2 - w = -w/2
+      // top: 1.1*h - starFieldHeight/2 = 1.1*h - h = 0.1*h
+      var pivotX = containerWidth / 2;
+      var pivotY = containerHeight * 1.1; // 10% below container
+      var starFieldLeft = pivotX - starFieldWidth / 2;
+      var starFieldTop = pivotY - starFieldHeight / 2;
+      
+      // Set stars container to calculated size and position it
+      this.starsElement.style.width = starFieldWidth + 'px';
+      this.starsElement.style.height = starFieldHeight + 'px';
+      this.starsElement.style.position = 'absolute';
+      this.starsElement.style.left = starFieldLeft + 'px';
+      this.starsElement.style.top = starFieldTop + 'px';
+      this.starsElement.style.transform = '';
+      this.starsElement.style.overflow = 'hidden';
+      this.starsElement.style.perspective = '100px';
+      this.starsElement.style.perspectiveOrigin = '50% 50%';
+      this.starsElement.style.pointerEvents = 'none';
+    } else {
+      // For full-page backgrounds, pivot point is at 10% of viewport height BELOW viewport
+      var viewportWidth = window.innerWidth;
+      var viewportHeight = window.innerHeight;
+      
+      // Star field should be w*2 x h*2 centered on pivot point
+      var starFieldWidth = viewportWidth * 2;
+      var starFieldHeight = viewportHeight * 2;
+      diameter = Math.max(starFieldWidth, starFieldHeight);
+      // Store star field dimensions for star distribution
+      this.skyState.starFieldWidth = starFieldWidth;
+      this.skyState.starFieldHeight = starFieldHeight;
+      
+      // Pivot point: (viewportWidth/2, viewportHeight * 1.1)
+      var pivotX = viewportWidth / 2;
+      var pivotY = viewportHeight * 1.1; // 10% below viewport
+      var starFieldLeft = pivotX - starFieldWidth / 2;
+      var starFieldTop = pivotY - starFieldHeight / 2;
+      
+      this.starsElement.style.width = starFieldWidth + 'px';
+      this.starsElement.style.height = starFieldHeight + 'px';
+      this.starsElement.style.position = 'fixed';
+      this.starsElement.style.left = starFieldLeft + 'px';
+      this.starsElement.style.top = starFieldTop + 'px';
+      this.starsElement.style.transform = '';
+      this.starsElement.style.overflow = 'hidden';
+    }
+
+    // Adjust density for mobile
+    var density = this.config.starDensity;
+    if (window.innerWidth <= 768) {
+      density = 2;
+    }
+
+    this.starsElement.dataset.allowbreathe = true;
+
+    // Calculate star density based on container type
+    // Keep star count the same as original (based on visible area w x h)
+    // Stars will be distributed across the larger star field (w*2 x h*2)
+    var screenArea, containerArea, areaScale;
+    if (isContained) {
+      // For contained elements, use container dimensions (original visible area)
+      var rect = skyParent.getBoundingClientRect();
+      screenArea = rect.width * rect.height;
+      // Use original visible area for star count calculation to keep count the same
+      containerArea = screenArea; // Same as visible area, not the larger star field
+      areaScale = containerArea / screenArea; // This will be 1.0, keeping original star count
+      // Scale down density for smaller containers
+      density = density * Math.min(1, screenArea / (800 * 600));
+    } else {
+      // For full-page backgrounds, use viewport dimensions (original visible area)
+      screenArea = window.innerWidth * window.innerHeight;
+      // Use original visible area for star count calculation to keep count the same
+      containerArea = screenArea; // Same as visible area, not the larger star field
+      areaScale = containerArea / screenArea; // This will be 1.0, keeping original star count
+    }
+
+    var layers = this.config.starLayers;
+    for (var i = 0; i < layers; i++) {
+      var newLayer = document.createElement("DIV");
+      var baseStarsCount = density * (200 * (0.5 / (i + 1)));
+      var starsCount = Math.floor(baseStarsCount * areaScale);
+
+      var fracComplete = (i + 1) / layers;
+      var op = fracComplete + 0.1;
+
+      newLayer.className = "dynamic-sky-layer dynamic-sky-layer" + i;
+      newLayer.style.zIndex = i;
+      newLayer.style.opacity = op;
+      newLayer.dataset.stars = starsCount;
+      newLayer.dataset.zoom = 1 + 2 * Math.pow(1.5, i);
+      this.starsElement.appendChild(newLayer);
+    }
+
+    var layerNodes = this.starsElement.querySelectorAll(".dynamic-sky-layer");
+    var self = this;
+
+    function initStars(layer) {
+      var starsCount = parseInt(layer.dataset.stars);
+      
+      // Use the actual star field dimensions (w*2 x h*2) for star distribution
+      var w = self.skyState.starFieldWidth || diameter;
+      var h = self.skyState.starFieldHeight || diameter;
+
+      for (var i = 0; i < starsCount; i++) {
+        var star = document.createElement("DIV");
+        var xVal = Math.random() * w;
+        var yVal = Math.random() * h;
+        var blue = "rgb(255," + (255 - Math.ceil(10 * Math.random())) + "," + (255 - Math.ceil(20 * Math.random())) + ")";
+        var red = "rgb(" + (255 - Math.ceil(20 * Math.random())) + ",255,255)";
+
+        star.className = "dynamic-sky-star";
+        star.style.left = xVal + "px";
+        star.style.top = yVal + "px";
+
+        if (i % 2 == 0) {
+          star.style.backgroundColor = blue;
+        } else {
+          star.style.backgroundColor = red;
+        }
+
+        layer.appendChild(star);
+      }
+    }
+
+    for (var i = 0; i < layerNodes.length; i++) {
+      initStars(layerNodes[i]);
+    }
+
+    this.startBreathingAnimation();
+    this.starsCreated = true;
+  };
+
+  DynamicSky.prototype.startBreathingAnimation = function(speed) {
+    speed = speed || 10000;
+    if (!this.starsElement) return;
+
+    var layerNodes = this.starsElement.querySelectorAll(".dynamic-sky-layer");
+    var self = this;
+
+    for (var i = 0; i < layerNodes.length; i++) {
+      var layer = layerNodes[i];
+      var transition = "transform " + speed + "ms ease-in-out";
+      layer.style.transition = transition;
+      layer.style.WebkitTransition = "-webkit-" + transition;
+      layer.style.MozTransition = "-moz-" + transition;
+      layer.style.MsTransition = "-ms-" + transition;
+      layer.style.OTransition = "-o-" + transition;
+
+      var transform = "translateZ(0.1px)";
+      layer.style.transform = transform;
+      layer.style.WebkitTransform = transform;
+      layer.style.MozTransform = transform;
+      layer.style.MsTransform = transform;
+      layer.style.OTransform = transform;
+
+      this.breatheIn(layer, speed);
+    }
+  };
+
+  DynamicSky.prototype.breatheIn = function(layer, speed) {
+    var self = this;
+    if (this.starsElement.dataset.allowbreathe === 'false') { return; }
+    layer.style.transform = "translateZ(" + layer.dataset.zoom + "px)";
+    setTimeout(function() {
+      self.breatheOut(layer, speed);
+    }, speed);
+  };
+
+  DynamicSky.prototype.breatheOut = function(layer, speed) {
+    var self = this;
+    if (this.starsElement.dataset.allowbreathe === 'false') { return; }
+    layer.style.transform = "translateZ(0px)";
+    setTimeout(function() {
+      self.breatheIn(layer, speed);
+    }, speed);
+  };
+
+  DynamicSky.prototype.renderGradient = function(altitude) {
+    var PI = Math.PI;
+    var RAYLEIGH_SCATTER = [5.802e-6, 13.558e-6, 33.1e-6];
+    var MIE_SCATTER = 3.996e-6;
+    var MIE_ABSORB = 4.44e-6;
+    var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
+    var RAYLEIGH_SCALE_HEIGHT = 8e3;
+    var MIE_SCALE_HEIGHT = 1.2e3;
+    var GROUND_RADIUS = 6360000;
+    var TOP_RADIUS = 6460000;
+    var SUN_INTENSITY = 1.0;
+    var GRADIENT_SAMPLES = 32;
+    var INTEGRATION_SAMPLES = 8;
+    var FOV_DEG = 75;
+    var EXPOSURE = 25.0;
+    var GAMMA = 2.2;
+    var SUNSET_BIAS_STRENGTH = 0.1;
+
+    function aces(color) {
+      return color.map(function(c) {
+        var n = c * (2.51 * c + 0.03);
+        var d = c * (2.43 * c + 0.59) + 0.14;
+        return Math.max(0, Math.min(1, n / d));
+      });
+    }
+
+    function applySunsetBias(rgb) {
+      var r = rgb[0], g = rgb[1], b = rgb[2];
+      var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      var w = 1.0 / (1.0 + 2.0 * lum);
+      var k = SUNSET_BIAS_STRENGTH;
+      var rb = 1.0 + 0.5 * k * w;
+      var gb = 1.0 - 0.5 * k * w;
+      var bb = 1.0 + 1.0 * k * w;
+      return [Math.max(0, r * rb), Math.max(0, g * gb), Math.max(0, b * bb)];
+    }
+
+    function rayleighPhase(angle) {
+      return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
+    }
+
+    function miePhase(angle) {
+      var g = 0.8;
+      var scale = 3 / (8 * PI);
+      var num = (1 - Math.pow(g, 2)) * (1 + Math.pow(Math.cos(angle), 2));
+      var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * Math.cos(angle), 3 / 2);
+      return (scale * num) / denom;
+    }
+
+    function intersectSphere(p, d, r) {
+      var m = p;
+      var b = dot(m, d);
+      var c = dot(m, m) - Math.pow(r, 2);
+      var discr = Math.pow(b, 2) - c;
+      if (discr < 0) return null;
+      var t = -b - Math.sqrt(discr);
+      if (t < 0) return -b + Math.sqrt(discr);
+      return t;
+    }
+
+    function computeTransmittance(height, angle) {
+      var rayOrigin = [0, GROUND_RADIUS + height, 0];
+      var rayDirection = [Math.sin(angle), Math.cos(angle), 0];
+      var distance = intersectSphere(rayOrigin, rayDirection, TOP_RADIUS);
+      if (!distance) return [1, 1, 1];
+
+      var segmentLength = distance / INTEGRATION_SAMPLES;
+      var t = 0.5 * segmentLength;
+
+      var odRayleigh = 0;
+      var odMie = 0;
+      var odOzone = 0;
+      for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
+        var pos = add(rayOrigin, scale(rayDirection, t));
+        var h = len(pos) - GROUND_RADIUS;
+        var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
+        var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
+        odRayleigh += dR * segmentLength;
+        var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
+        odOzone += ozoneDensity * segmentLength;
+        odMie += dM * segmentLength;
+        t += segmentLength;
+      }
+
+      var tauR = [
+        RAYLEIGH_SCATTER[0] * odRayleigh,
+        RAYLEIGH_SCATTER[1] * odRayleigh,
+        RAYLEIGH_SCATTER[2] * odRayleigh,
+      ];
+      var tauM = [MIE_ABSORB * odMie, MIE_ABSORB * odMie, MIE_ABSORB * odMie];
+      var tauO = [
+        OZONE_ABSORB[0] * odOzone,
+        OZONE_ABSORB[1] * odOzone,
+        OZONE_ABSORB[2] * odOzone,
+      ];
+
+      var tau = [
+        -(tauR[0] + tauM[0] + tauO[0]),
+        -(tauR[1] + tauM[1] + tauO[1]),
+        -(tauR[2] + tauM[2] + tauO[2]),
+      ];
+      return exp(tau);
+    }
+
+    var cameraPosition = [0, GROUND_RADIUS, 0];
+    var sunDirection = norm([Math.cos(altitude), Math.sin(altitude), 0]);
+    var focalZ = 1.0 / Math.tan((FOV_DEG * 0.5 * PI) / 180.0);
+
+    var stops = [];
+    for (var i = 0; i < GRADIENT_SAMPLES; i++) {
+      var s = i / (GRADIENT_SAMPLES - 1);
+      var viewDirection = norm([0, s, focalZ]);
+      var inscattered = [0, 0, 0];
+
+      var tExitTop = intersectSphere(cameraPosition, viewDirection, TOP_RADIUS);
+      if (tExitTop !== null && tExitTop > 0) {
+        var rayOrigin = [cameraPosition[0], cameraPosition[1], cameraPosition[2]];
+        var segmentLength = tExitTop / INTEGRATION_SAMPLES;
+        var tRay = segmentLength * 0.5;
+
+        var rayOriginRadius = len(rayOrigin);
+        var isRayPointingDownwardAtStart =
+          dot(rayOrigin, viewDirection) / rayOriginRadius < 0.0;
+        var startHeight = rayOriginRadius - GROUND_RADIUS;
+        var startRayCos = clamp(
+          dot(
+            [
+              rayOrigin[0] / rayOriginRadius,
+              rayOrigin[1] / rayOriginRadius,
+              rayOrigin[2] / rayOriginRadius,
+            ],
+            viewDirection
+          ),
+          -1,
+          1
+        );
+        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        var transmittanceCameraToSpace = computeTransmittance(
+          startHeight,
+          startRayAngle
+        );
+
+        for (var j = 0; j < INTEGRATION_SAMPLES; j++) {
+          var samplePos = add(rayOrigin, scale(viewDirection, tRay));
+          var sampleRadius = len(samplePos);
+          var upUnit = [
+            samplePos[0] / sampleRadius,
+            samplePos[1] / sampleRadius,
+            samplePos[2] / sampleRadius,
+          ];
+          var sampleHeight = sampleRadius - GROUND_RADIUS;
+
+          var viewCos = clamp(dot(upUnit, viewDirection), -1, 1);
+          var sunCos = clamp(dot(upUnit, sunDirection), -1, 1);
+          var viewAngle = Math.acos(Math.abs(viewCos));
+          var sunAngle = Math.acos(sunCos);
+
+          var transmittanceToSpace = computeTransmittance(
+            sampleHeight,
+            viewAngle
+          );
+          var transmittanceCameraToSample = [0, 0, 0];
+          for (var k = 0; k < 3; k++) {
+            transmittanceCameraToSample[k] = isRayPointingDownwardAtStart
+              ? transmittanceToSpace[k] / transmittanceCameraToSpace[k]
+              : transmittanceCameraToSpace[k] / transmittanceToSpace[k];
+          }
+
+          var transmittanceLight = computeTransmittance(sampleHeight, sunAngle);
+          var opticalDensityRay = Math.exp(
+            -sampleHeight / RAYLEIGH_SCALE_HEIGHT
+          );
+          var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
+          var sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1);
+          var sunViewAngle = Math.acos(sunViewCos);
+          var phaseR = rayleighPhase(sunViewAngle);
+          var phaseM = miePhase(sunViewAngle);
+
+          var scatteredRgb = [0, 0, 0];
+          for (var k = 0; k < 3; k++) {
+            var rayleighTerm = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR;
+            var mieTerm = MIE_SCATTER * opticalDensityMie * phaseM;
+            scatteredRgb[k] = transmittanceLight[k] * (rayleighTerm + mieTerm);
+          }
+
+          for (var k = 0; k < 3; k++) {
+            inscattered[k] +=
+              transmittanceCameraToSample[k] * scatteredRgb[k] * segmentLength;
+          }
+          tRay += segmentLength;
+        }
+
+        for (var k = 0; k < 3; k++) inscattered[k] *= SUN_INTENSITY;
+      }
+
+      var color = [inscattered[0], inscattered[1], inscattered[2]];
+      color = color.map(function(c) { return c * EXPOSURE; });
+      color = applySunsetBias(color);
+      color = aces(color);
+      color = color.map(function(c) { return Math.pow(c, 1.0 / GAMMA); });
+      var rgb = color.map(function(c) { return Math.round(clamp(c, 0, 1) * 255); });
+
+      var percent = (1 - s) * 100;
+      stops.push({ percent: percent, rgb: rgb });
+    }
+
+    stops.sort(function(a, b) { return a.percent - b.percent; });
+    var colorStops = stops
+      .map(function(stop) {
+        return "rgb(" + stop.rgb[0] + ", " + stop.rgb[1] + ", " + stop.rgb[2] + ") " +
+               (Math.round(stop.percent * 100) / 100) + "%";
+      })
+      .join(", ");
+    return [
+      "linear-gradient(to bottom, " + colorStops + ")",
+      stops[0].rgb,
+      stops[stops.length - 1].rgb,
+    ];
+  };
+
+  /**
+   * Update the sky background for a specific date/time
+   * This is the main method that sliders should call
+   * 
+   * @param {Date} date - The date/time to render the sky for. If not provided, uses current time.
+   */
+  DynamicSky.prototype.updateSky = function(date) {
+    if (!this.userLatitude || !this.userLongitude) {
+      console.warn('DynamicSky: Location not set. Call init() first or provide latitude/longitude.');
+      return;
+    }
+    
+    // Ensure SunCalc is available
+    if (typeof global.SunCalc === 'undefined') {
+      console.error('DynamicSky: SunCalc is not available. Please ensure SunCalc is loaded.');
+      return;
+    }
+
+    this.createSky();
+
+    var now = date || new Date();
+    var times = SunCalc.getTimes(now, this.userLatitude, this.userLongitude);
+    var sunPos = SunCalc.getPosition(now, this.userLatitude, this.userLongitude);
+
+    var renderAltitude = sunPos.altitude;
+
+    var sunsetAltitude = -0.833 * (Math.PI / 180);
+    var duskAltitude = -6 * (Math.PI / 180);
+    var dawnAltitude = -6 * (Math.PI / 180);
+    var sunriseAltitude = -0.833 * (Math.PI / 180);
+    var visualTwilightBottomAltitude = -3 * (Math.PI / 180);
+
+    if (now > times.sunset && now < times.dusk) {
+      var twilightProgress = (now - times.sunset) / (times.dusk - times.sunset);
+      renderAltitude = sunsetAltitude + twilightProgress * (visualTwilightBottomAltitude - sunsetAltitude);
+    }
+
+    if (now > times.dawn && now < times.sunrise) {
+      var twilightProgress = (now - times.dawn) / (times.sunrise - times.dawn);
+      renderAltitude = visualTwilightBottomAltitude + twilightProgress * (sunriseAltitude - visualTwilightBottomAltitude);
+    }
+
+    var gradient = this.renderGradient(renderAltitude)[0];
+
+    if (this.skyElement) {
+      this.skyElement.style.backgroundImage = gradient;
+    }
+
+    // Handle stars visibility
+    if (this.starsElement) {
+      var twilightBeginsAltitude = 0;
+      var fullNightAltitude = -6 * (Math.PI / 180);
+      var nightIntensity = 0;
+
+      if (sunPos.altitude < twilightBeginsAltitude) {
+        var transitionRange = fullNightAltitude - twilightBeginsAltitude;
+        var progress = (sunPos.altitude - twilightBeginsAltitude) / transitionRange;
+        nightIntensity = clamp(progress, 0, 1.0);
+      }
+
+      this.starsElement.style.opacity = nightIntensity;
+      if (this.starsElement.dataset) {
+        this.starsElement.dataset.allowbreathe = nightIntensity > 0;
+      }
+
+      // Star rotation
+      // Rotate around the pivot point (center of star field, which is 10% below container)
+      var msInDay = 86400000;
+      var currentMs = (now.getHours() * 3600000) + (now.getMinutes() * 60000) + (now.getSeconds() * 1000) + now.getMilliseconds();
+      var rotationDegrees = (currentMs / msInDay) * 360;
+      
+      // Set transform-origin to center of star field (50% 50%)
+      // The star field is positioned so its center is at the pivot point (10% below container)
+      // This creates an arc effect as stars rotate around this lower pivot point
+      this.starsElement.style.transformOrigin = '50% 50%';
+      
+      // Apply rotation - positioning is already handled in createSky()
+      this.starsElement.style.transform = "rotate(" + rotationDegrees + "deg)";
+    }
+
+    // Callback
+    if (this.config.onUpdate) {
+      this.config.onUpdate({
+        date: now,
+        sunPosition: sunPos,
+        sunTimes: times
+      });
+    }
+  };
+
+
+  /**
+   * Set the location coordinates manually
+   * 
+   * @param {number} latitude - Latitude coordinate
+   * @param {number} longitude - Longitude coordinate
+   */
+  DynamicSky.prototype.setLocation = function(latitude, longitude) {
+    this.userLatitude = latitude;
+    this.userLongitude = longitude;
+    this.updateSky();
+  };
+
+  /**
+   * Convert minutes of day (0-1440) to a Date object for today
+   * Useful for sliders that work with minutes
+   * 
+   * @param {number} minutes - Minutes since midnight (0-1440)
+   * @returns {Date} Date object for today at the specified minutes
+   */
+  DynamicSky.prototype.minutesToDate = function(minutes) {
+    var now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, minutes);
+  };
+
+  /**
+   * Convert a percentage (0-1) to a Date object for today
+   * Useful for sliders that work with percentages
+   * 
+   * @param {number} percent - Percentage of day (0 = midnight, 1 = next midnight)
+   * @returns {Date} Date object for today at the specified percentage
+   */
+  DynamicSky.prototype.percentToDate = function(percent) {
+    var minutes = Math.round(percent * 1440) % 1440;
+    return this.minutesToDate(minutes);
+  };
+
+  /**
+   * Convert hours (0-24) to a Date object for today
+   * Useful for sliders that work with hours
+   * 
+   * @param {number} hours - Hours since midnight (0-24)
+   * @returns {Date} Date object for today at the specified hours
+   */
+  DynamicSky.prototype.hoursToDate = function(hours) {
+    var minutes = Math.round(hours * 60) % 1440;
+    return this.minutesToDate(minutes);
+  };
+
+  /**
+   * Convert a Date object to minutes of day (0-1440)
+   * Useful for getting current time in slider-friendly format
+   * 
+   * @param {Date} date - Date object (defaults to current time)
+   * @returns {number} Minutes since midnight
+   */
+  DynamicSky.prototype.dateToMinutes = function(date) {
+    date = date || new Date();
+    var startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return Math.round((date - startOfDay) / 60000);
+  };
+
+  /**
+   * Convert a Date object to percentage of day (0-1)
+   * Useful for getting current time in slider-friendly format
+   * 
+   * @param {Date} date - Date object (defaults to current time)
+   * @returns {number} Percentage of day (0-1)
+   */
+  DynamicSky.prototype.dateToPercent = function(date) {
+    return this.dateToMinutes(date) / 1440;
+  };
+
+  /**
+   * Clean up and destroy the instance
+   */
+  DynamicSky.prototype.destroy = function() {
+    this.isInitialized = false;
+  };
+
+  // Export to global scope
+  global.DynamicSky = DynamicSky;
+
+})(typeof window !== 'undefined' ? window : this);
+

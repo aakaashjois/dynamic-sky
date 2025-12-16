@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Sky</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700;900&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        :root {
+            --primary-bg: rgba(255, 255, 255, 0.05);
+            --secondary-bg: rgba(255, 255, 255, 0.03);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: rgba(255, 255, 255, 0.95);
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+            --accent: #60a5fa;
+            --accent-hover: #3b82f6;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+            --radius: 16px;
+            --radius-sm: 8px;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.02em;
+        }
+        
+        .hero p {
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
+            font-weight: 600;
+            color: var(--text-primary);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.5);
+            line-height: 1.5;
+        }
+        
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        /* Section Styles */
+        .section {
+            margin: 8rem 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .section-header h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        .section-header p {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            max-width: 600px;
+            margin: 0 auto;
+            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Card Styles */
+        .card {
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Use Case Card Styles - Consistent structure */
+        .use-case-card {
+            display: flex;
+            flex-direction: column;
+            padding: 2.5rem;
+        }
+        
+        .use-case-card .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Two-column layout for use case cards */
+        .use-case-card .card-main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Single-column layout for cards without preview */
+        .use-case-card.text-only .card-main-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .use-case-card .card-left {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .use-case-card .card-right {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .use-case-card .card-controls {
+            margin-top: 0;
+            padding-top: 0;
+        }
+        
+        .use-case-card .card-controls-inline {
+            margin-top: 1rem;
+        }
+        
+        /* Full-width cards use different layout */
+        .card-full-width .card-main-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .card-full-width .card-right {
+            margin-top: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-primary);
+        }
+        
+        .card-icon {
+            font-size: 1.75rem;
+        }
+        
+        .card-description {
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+            font-weight: 500;
+        }
+        
+        .use-case-card .card-description {
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .use-case-card p {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .use-case-card .card-title {
+            font-weight: 700;
+        }
+        
+        /* Advanced Usage section improvements */
+        .section .card .card-description {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .section .card .card-title {
+            font-weight: 700;
+        }
+        
+        /* Ensure all card text is readable */
+        .card {
+            color: var(--text-primary);
+        }
+        
+        .card p:not(.card-description) {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        /* Grid Layouts */
+        .grid {
+            display: grid;
+            gap: 2rem;
+        }
+        
+        .grid-2 {
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+        }
+        
+        /* Full-width cards in grid */
+        .grid-2 .card-full-width {
+            width: 100%;
+        }
+        
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+        
+        /* Sky Preview Boxes */
+        .sky-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1.5rem;
+        }
+        
+        .sky-preview-large {
+            height: 300px;
+        }
+        
+        .sky-preview-small {
+            height: 150px;
+        }
+        
+        /* Standardize sky preview heights in use case cards */
+        .use-case-card .sky-preview {
+            height: 200px;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Allow override for specific cases that need different sizes */
+        .use-case-card .sky-preview-large {
+            height: 250px;
+        }
+        
+        .use-case-card .sky-preview-small {
+            height: 180px;
+        }
+        
+        .sky-preview-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+            padding: 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            z-index: 10;
+        }
+        
+        /* Slider Styles */
+        .slider-container {
+            margin: 0;
+        }
+        
+        .use-case-card .slider-container {
+            margin-top: 0;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .use-case-card .slider-label {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .slider-ends {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .time-slider {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .time-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        .time-slider::-webkit-slider-thumb:hover {
+            background: var(--accent-hover);
+            transform: scale(1.2);
+        }
+        
+        .time-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+        }
+        
+        .time-display {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Location Selector */
+        .location-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        
+        .use-case-card .location-selector {
+            margin-bottom: 1.5rem;
+        }
+        
+        .location-btn {
+            padding: 0.5rem 1rem;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .location-btn:hover {
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+        
+        .location-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        /* Comparison Grid */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .comparison-item {
+            text-align: center;
+        }
+        
+        .comparison-label {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .use-case-card .comparison-grid .sky-preview {
+            height: 150px;
+        }
+        
+        /* Full-width card improvements */
+        .card-full-width .comparison-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+        
+        .card-full-width .comparison-grid .sky-preview {
+            height: 180px;
+        }
+        
+        @media (max-width: 1200px) {
+            .card-full-width .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Feature List */
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 0.75rem 0;
+            color: var(--text-primary);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .feature-list li::before {
+            content: "✓";
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        /* Code Block */
+        .code-block {
+            margin: 1rem 0;
+        }
+        
+        .use-case-card .code-block {
+            margin: 1rem 0 1.5rem 0;
+        }
+        
+        .use-case-card .code-accordion {
+            margin-top: 1.5rem;
+            margin-bottom: 0;
+        }
+        
+        /* Prism.js theme overrides for dark background */
+        .code-block pre[class*="language-"] {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .use-case-card .code-block pre[class*="language-"] {
+            font-size: 0.8rem;
+            padding: 1rem;
+        }
+        
+        /* Accordion Styles */
+        .code-accordion {
+            margin: 1rem 0 1.5rem 0;
+        }
+        
+        .code-accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .code-accordion-header:hover {
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+        
+        .code-accordion-header::after {
+            content: "▶";
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+            color: white;
+        }
+        
+        .code-accordion-header.expanded::after {
+            transform: rotate(90deg);
+        }
+        
+        .code-accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .code-accordion-content.expanded {
+            max-height: 2000px;
+        }
+        
+        .code-accordion-content .code-block {
+            margin-top: 0.5rem;
+            margin-bottom: 0;
+        }
+        
+        .code-block pre[class*="language-"] code {
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+        
+        /* Ensure Prism.js tokens are visible */
+        .code-block .token.comment,
+        .code-block .token.prolog,
+        .code-block .token.doctype,
+        .code-block .token.cdata {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .code-block .token.punctuation {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .code-block .token.property,
+        .code-block .token.tag,
+        .code-block .token.boolean,
+        .code-block .token.number,
+        .code-block .token.constant,
+        .code-block .token.symbol,
+        .code-block .token.deleted {
+            color: #f92672;
+        }
+        
+        .code-block .token.selector,
+        .code-block .token.attr-name,
+        .code-block .token.string,
+        .code-block .token.char,
+        .code-block .token.builtin,
+        .code-block .token.inserted {
+            color: #a6e22e;
+        }
+        
+        .code-block .token.operator,
+        .code-block .token.entity,
+        .code-block .token.url,
+        .code-block .language-css .token.string,
+        .code-block .style .token.string {
+            color: #f92672;
+        }
+        
+        .code-block .token.atrule,
+        .code-block .token.attr-value,
+        .code-block .token.keyword {
+            color: #66d9ef;
+        }
+        
+        .code-block .token.function,
+        .code-block .token.class-name {
+            color: #e6db74;
+        }
+        
+        .code-block .token.regex,
+        .code-block .token.important,
+        .code-block .token.variable {
+            color: #fd971f;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 2rem 1rem;
+            }
+            
+            .section {
+                margin: 4rem 0;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .use-case-card {
+                padding: 1.5rem;
+            }
+            
+            .use-case-card .card-main-content {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .use-case-card .card-right {
+                order: -1; /* Show preview first on mobile */
+            }
+            
+            .grid-2,
+            .grid-3 {
+                gap: 2rem;
+            }
+            
+            .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
+            }
+            
+        .scroll-indicator::after {
+            content: "↓";
+            font-size: 1.8rem;
+            animation: bounce 2s infinite;
+            margin-top: 0.25rem;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Sky (Full Page) -->
+    <div id="background-sky"></div>
+    <div id="stars-container"></div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Dynamic Sky</h1>
+            <p>Transform your web experience with breathtaking, real-time sky renders that evolve throughout the day. From golden sunrises to star-studded nights—bring the atmosphere to life.</p>
+            <div class="scroll-indicator">Scroll to explore</div>
+        </div>
+    </section>
+
+    <!-- Features Overview -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Key Features</h2>
+                <p>Everything you need for stunning sky backgrounds</p>
+            </div>
+            <div class="grid grid-3">
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🌅</span>
+                        Realistic Sky Rendering
+                    </div>
+                    <p class="card-description">Physically-based atmospheric scattering using single-scattering approximation for authentic sky colors throughout the day.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">⭐</span>
+                        Animated Starfield
+                    </div>
+                    <p class="card-description">Multi-layer parallax starfield with breathing animation that automatically appears at night and fades during twilight. <strong>Note:</strong> Stars are decorative and not accurate to real astronomical positions. They are randomly generated for visual effect and do not represent real constellations or star positions.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🌍</span>
+                        Location-Aware
+                    </div>
+                    <p class="card-description">Auto-detects location via IP geolocation or set custom coordinates for accurate sun position calculations.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🔄</span>
+                        Time-Based Control
+                    </div>
+                    <p class="card-description">Connect any slider (linear, circular, or custom) to control time and see the sky change in real-time.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">📱</span>
+                        Mobile Optimized
+                    </div>
+                    <p class="card-description">Automatically adjusts star density and rendering for optimal performance on mobile devices.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🎨</span>
+                        Flexible Integration
+                    </div>
+                    <p class="card-description">Works as full-page background or contained element. Easy to integrate into any design.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Quick Start -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Quick Start</h2>
+                <p>Get started in minutes with just a few lines of code</p>
+            </div>
+            <div class="card" style="max-width: 800px; margin: 0 auto;">
+                <div class="code-block">
+                    <pre><code class="language-markup">&lt;!-- Include the library --&gt;
+&lt;script src="dynamic-sky.js"&gt;&lt;/script&gt;
+
+&lt;!-- Add containers for sky and stars --&gt;
+&lt;div id="background-sky"&gt;&lt;/div&gt;
+&lt;div id="stars-container"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  // Create a new DynamicSky instance
+  const sky = new DynamicSky();
+  // Initialize (auto-detects location via IP geolocation)
+  sky.init();
+&lt;/script&gt;</code></pre>
+                </div>
+                <ul class="feature-list" style="margin-top: 2rem;">
+                    <li>No CSS files needed - styles are automatically injected</li>
+                    <li>Works as full-page background or contained element</li>
+                    <li>Auto-detects location or set custom coordinates</li>
+                    <li>Connect any slider type (linear, circular, custom)</li>
+                    <li>Mobile optimized with automatic performance tuning</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+        
+    <!-- Use Case Examples -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Use Case Examples</h2>
+                <p>See DynamicSky in action across different integration scenarios</p>
+            </div>
+            
+            <div class="grid grid-2">
+                <!-- Example 1: Immersive Background -->
+                <div class="card use-case-card text-only fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">🎮</span>
+                                    Immersive Background
+                                </div>
+                                <p class="card-description">Create immersive experiences with full-page sky backgrounds. Perfect for landing pages, portfolios, and creative projects.</p>
+                                <p style="margin-bottom: 1rem; color: var(--text-primary); font-size: 0.95rem; font-weight: 500;">
+                                    The sky you see behind this page is a live example! Use the slider below to control it.
+                                </p>
+                                <div class="card-controls-inline">
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Background Sky Time</span>
+                                            <span id="background-time">12:00 AM</span>
+                                        </div>
+                                        <input type="range" class="time-slider" id="background-slider" min="0" max="1440" step="1" value="0">
+                                        <div class="slider-ends">
+                                            <span>12:00 AM</span>
+                                            <span>12:00 AM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;div id="background-sky"&gt;&lt;/div&gt;
+&lt;div id="stars-container"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#background-sky',
+    starsContainer: '#stars-container'
+  });
+  sky.init().then(() => {
+    const slider = document.getElementById('time-slider');
+    slider.addEventListener('input', () => {
+      const minutes = parseInt(slider.value);
+      sky.updateSky(sky.minutesToDate(minutes));
+    });
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 2: Weather App -->
+                <div class="card use-case-card fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">🌤️</span>
+                                    Weather Application
+                                </div>
+                                <p class="card-description">Show current sky conditions matching the time of day. Perfect for weather apps that want to display realistic sky backgrounds.</p>
+                                <div class="card-controls-inline">
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Time of Day</span>
+                                            <span id="weather-time">12:00 AM</span>
+                                        </div>
+                                        <input type="range" class="time-slider" id="weather-slider" min="0" max="1440" step="1" value="0">
+                                        <div class="slider-ends">
+                                            <span>12:00 AM</span>
+                                            <span>12:00 AM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-right">
+                                <div class="sky-preview" id="weather-sky-container" style="height: 250px; width: 100%;">
+                                    <div id="weather-sky" class="sky-element"></div>
+                                    <div id="weather-stars" class="stars-element"></div>
+                                    <div class="sky-preview-label">Current Time Sky</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;div id="weather-sky"&gt;&lt;/div&gt;
+&lt;div id="weather-stars"&gt;&lt;/div&gt;
+&lt;input type="range" id="time-slider" min="0" max="1440"&gt;
+
+&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#weather-sky',
+    starsContainer: '#weather-stars'
+  });
+  sky.init().then(() => {
+    const slider = document.getElementById('time-slider');
+    slider.addEventListener('input', () => {
+      const minutes = parseInt(slider.value);
+      sky.updateSky(sky.minutesToDate(minutes));
+    });
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 3: Dashboard Widget with Programmatic Control -->
+                <div class="card use-case-card fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">📊</span>
+                                    Dashboard Widget (Programmatic Control)
+                                </div>
+                                <p class="card-description">Compact sky preview for dashboards and admin panels. This example demonstrates <strong>programmatic control</strong> - the slider moves automatically to show how you can change the sky programmatically without user interaction.</p>
+                                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-primary); font-weight: 500;">
+                                    🔄 Slider moves automatically - demonstrating programmatic sky control
+                                </p>
+                                <div class="card-controls-inline">
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Time (Auto-Controlled)</span>
+                                            <span id="dashboard-time">12:00 AM</span>
+                                        </div>
+                                        <input type="range" class="time-slider" id="dashboard-slider" min="0" max="1440" step="1" value="0">
+                                        <div class="slider-ends">
+                                            <span>12:00 AM</span>
+                                            <span>12:00 AM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-right">
+                                <div class="sky-preview" id="dashboard-sky-container" style="height: 200px; width: 100%;">
+                                    <div id="dashboard-sky" class="sky-element"></div>
+                                    <div id="dashboard-stars" class="stars-element"></div>
+                                    <div class="sky-preview-label">Auto-Updating Dashboard Widget</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#dashboard-sky',
+    starsContainer: '#dashboard-stars'
+  });
+  sky.init().then(() => {
+    let currentMinutes = 0;
+    setInterval(() => {
+      currentMinutes = (currentMinutes + 1) % 1440;
+      sky.updateSky(sky.minutesToDate(currentMinutes));
+    }, 1000); // Update every second
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 4: Travel App -->
+                <div class="card use-case-card fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">✈️</span>
+                                    Travel & Time Zones
+                                </div>
+                                <p class="card-description">Compare sky conditions across different locations and time zones. Great for travel apps showing destination weather.</p>
+                                <div class="location-selector">
+                                    <button class="location-btn active" data-location="new-york">New York</button>
+                                    <button class="location-btn" data-location="tokyo">Tokyo</button>
+                                    <button class="location-btn" data-location="london">London</button>
+                                    <button class="location-btn" data-location="sydney">Sydney</button>
+                                </div>
+                                <div class="card-controls-inline">
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Local Time</span>
+                                            <span id="travel-time">12:00 AM</span>
+                                        </div>
+                                        <input type="range" class="time-slider" id="travel-slider" min="0" max="1440" step="1" value="0">
+                                        <div class="slider-ends">
+                                            <span>12:00 AM</span>
+                                            <span>12:00 AM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-right">
+                                <div class="sky-preview" id="travel-sky-container" style="height: 250px; width: 100%;">
+                                    <div id="travel-sky" class="sky-element"></div>
+                                    <div id="travel-stars" class="stars-element"></div>
+                                    <div class="sky-preview-label" id="travel-label">New York - 12:00 AM</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#travel-sky',
+    starsContainer: '#travel-stars',
+    latitude: 40.7128,  // New York
+    longitude: -74.0060
+  });
+  sky.init().then(() => {
+    // Change location when button clicked
+    document.querySelectorAll('.location-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const loc = locations[btn.dataset.location];
+        sky.setLocation(loc.lat, loc.lng);
+        sky.updateSky(sky.minutesToDate(slider.value));
+      });
+    });
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 5: Auto-Updating Sky -->
+                <div class="card use-case-card fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">🔄</span>
+                                    Auto-Updating Sky
+                                </div>
+                                <p class="card-description">Sky that automatically updates to match the current time. Perfect for dashboards or apps that want to show real-time sky conditions without manual controls.</p>
+                                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-primary); font-weight: 500;">
+                                    ⏱️ Updates automatically every minute
+                                </p>
+                            </div>
+                            <div class="card-right">
+                                <div class="sky-preview" id="auto-sky-container" style="height: 250px; width: 100%;">
+                                    <div id="auto-sky" class="sky-element"></div>
+                                    <div id="auto-stars" class="stars-element"></div>
+                                    <div class="sky-preview-label" id="auto-label">Live Time: <span id="auto-time-display">--:--</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#auto-sky',
+    starsContainer: '#auto-stars'
+  });
+  sky.init().then(() => {
+    function updateToCurrentTime() {
+      const now = new Date();
+      sky.updateSky(now);
+    }
+    updateToCurrentTime();
+    setInterval(updateToCurrentTime, 60000); // Update every minute
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 6: Product Card with Sky -->
+                <div class="card use-case-card fade-in-up">
+                    <div class="card-content">
+                        <div class="card-main-content">
+                            <div class="card-left">
+                                <div class="card-title">
+                                    <span class="card-icon">🛍️</span>
+                                    Product Showcase Card
+                                </div>
+                                <p class="card-description">Use sky as a background element in product cards or hero sections. Shows how DynamicSky can enhance UI components beyond full-page backgrounds.</p>
+                                <div class="card-controls-inline">
+                                    <div class="slider-container">
+                                        <div class="slider-label">
+                                            <span>Sky Time</span>
+                                            <span id="product-time">12:00 AM</span>
+                                        </div>
+                                        <input type="range" class="time-slider" id="product-slider" min="0" max="1440" step="1" value="0">
+                                        <div class="slider-ends">
+                                            <span>12:00 AM</span>
+                                            <span>12:00 AM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-right">
+                                <div style="position: relative; border-radius: var(--radius-sm); overflow: hidden; width: 100%; height: 250px;">
+                                    <div class="sky-preview" id="product-sky-container" style="height: 100%; margin-bottom: 0;">
+                                        <div id="product-sky" class="sky-element"></div>
+                                        <div id="product-stars" class="stars-element"></div>
+                                    </div>
+                                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 1.5rem; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                                        <h3 style="margin: 0 0 0.5rem; font-size: 1.3rem; font-weight: 700; color: white;">Premium Product</h3>
+                                        <p style="margin: 0; font-size: 0.9rem; font-weight: 500; color: rgba(255,255,255,0.95);">Beautiful sky background enhances your product presentation</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;div style="position: relative;"&gt;
+  &lt;div id="product-sky"&gt;&lt;/div&gt;
+  &lt;div id="product-stars"&gt;&lt;/div&gt;
+  &lt;div style="position: absolute; bottom: 0;"&gt;
+    &lt;h3&gt;Product Title&lt;/h3&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+  const sky = new DynamicSky({
+    skyContainer: '#product-sky',
+    starsContainer: '#product-stars'
+  });
+  sky.init();
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Example 7: Time Comparison -->
+                <div class="card use-case-card card-full-width fade-in-up">
+                    <div class="card-content">
+                        <div class="card-title">
+                            <span class="card-icon">⏰</span>
+                            Time Comparison
+                        </div>
+                        <p class="card-description">Compare how the sky looks at different times of day. Useful for showing time-based variations in a single view.</p>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                            <div style="position: relative;">
+                                <div class="sky-preview" id="morning-sky-container" style="height: 180px; margin-bottom: 0;">
+                                    <div id="morning-sky" class="sky-element"></div>
+                                    <div id="morning-stars" class="stars-element"></div>
+                                </div>
+                                <div class="sky-preview-label" style="font-size: 0.85rem; padding: 0.75rem;">Morning</div>
+                            </div>
+                            <div style="position: relative;">
+                                <div class="sky-preview" id="noon-sky-container" style="height: 180px; margin-bottom: 0;">
+                                    <div id="noon-sky" class="sky-element"></div>
+                                    <div id="noon-stars" class="stars-element"></div>
+                                </div>
+                                <div class="sky-preview-label" style="font-size: 0.85rem; padding: 0.75rem;">Noon</div>
+                            </div>
+                            <div style="position: relative;">
+                                <div class="sky-preview" id="evening-sky-container" style="height: 180px; margin-bottom: 0;">
+                                    <div id="evening-sky" class="sky-element"></div>
+                                    <div id="evening-stars" class="stars-element"></div>
+                                </div>
+                                <div class="sky-preview-label" style="font-size: 0.85rem; padding: 0.75rem;">Evening</div>
+                            </div>
+                        </div>
+                        <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-primary); font-weight: 500; text-align: center;">
+                            Multiple sky instances showing different times simultaneously
+                        </p>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;script&gt;
+  // Create multiple sky instances
+  const morningSky = new DynamicSky({
+    skyContainer: '#morning-sky',
+    starsContainer: '#morning-stars'
+  });
+  const noonSky = new DynamicSky({
+    skyContainer: '#noon-sky',
+    starsContainer: '#noon-stars'
+  });
+  const eveningSky = new DynamicSky({
+    skyContainer: '#evening-sky',
+    starsContainer: '#evening-stars'
+  });
+  
+  Promise.all([morningSky.init(), noonSky.init(), eveningSky.init()]).then(() => {
+    morningSky.updateSky(morningSky.minutesToDate(360));  // 6 AM
+    noonSky.updateSky(noonSky.minutesToDate(720));        // 12 PM
+    eveningSky.updateSky(eveningSky.minutesToDate(1080));  // 6 PM
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 8: Location Comparison -->
+                <div class="card use-case-card card-full-width fade-in-up">
+                    <div class="card-content">
+                        <div class="card-title">
+                            <span class="card-icon">🌍</span>
+                            Location Comparison
+                        </div>
+                        <p class="card-description">Compare sky conditions across multiple locations simultaneously. Great for travel apps or weather dashboards showing conditions in different cities.</p>
+                        <div class="comparison-grid">
+                            <div class="comparison-item">
+                                <div class="sky-preview" id="compare-1-container">
+                                    <div id="compare-1-sky" class="sky-element"></div>
+                                    <div id="compare-1-stars" class="stars-element"></div>
+                                </div>
+                                <div class="comparison-label">San Francisco<br>37.77°N, 122.41°W</div>
+                            </div>
+                            <div class="comparison-item">
+                                <div class="sky-preview" id="compare-2-container">
+                                    <div id="compare-2-sky" class="sky-element"></div>
+                                    <div id="compare-2-stars" class="stars-element"></div>
+                                </div>
+                                <div class="comparison-label">New York<br>40.71°N, 74.01°W</div>
+                            </div>
+                            <div class="comparison-item">
+                                <div class="sky-preview" id="compare-3-container">
+                                    <div id="compare-3-sky" class="sky-element"></div>
+                                    <div id="compare-3-stars" class="stars-element"></div>
+                                </div>
+                                <div class="comparison-label">Tokyo<br>35.68°N, 139.69°E</div>
+                            </div>
+                            <div class="comparison-item">
+                                <div class="sky-preview" id="compare-4-container">
+                                    <div id="compare-4-sky" class="sky-element"></div>
+                                    <div id="compare-4-stars" class="stars-element"></div>
+                                </div>
+                                <div class="comparison-label">London<br>51.51°N, 0.13°W</div>
+                            </div>
+                        </div>
+                        <div class="code-accordion">
+                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                                <span>Code</span>
+                            </div>
+                            <div class="code-accordion-content">
+                                <div class="code-block">
+                                    <pre><code class="language-markup">&lt;script&gt;
+  const locations = [
+    { lat: 37.7749, lng: -122.4194 },  // San Francisco
+    { lat: 40.7128, lng: -74.0060 },   // New York
+    { lat: 35.6762, lng: 139.6503 },   // Tokyo
+    { lat: 51.5074, lng: -0.1278 }     // London
+  ];
+  
+  const skies = locations.map((loc, i) => {
+    return new DynamicSky({
+      skyContainer: `#compare-${i+1}-sky`,
+      starsContainer: `#compare-${i+1}-stars`,
+      latitude: loc.lat,
+      longitude: loc.lng
+    });
+  });
+  
+  Promise.all(skies.map(sky => sky.init())).then(() => {
+    const date = skies[0].minutesToDate(slider.value);
+    skies.forEach(sky => sky.updateSky(date));
+  });
+&lt;/script&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-controls">
+                        <div style="text-align: center;">
+                            <div class="slider-container" style="max-width: 500px; margin: 0 auto;">
+                                <div class="slider-label">
+                                    <span>Compare Time</span>
+                                    <span id="compare-time">12:00 AM</span>
+                                </div>
+                                <input type="range" class="time-slider" id="compare-slider" min="0" max="1440" step="1" value="0">
+                                <div class="slider-ends">
+                                    <span>12:00 AM</span>
+                                    <span>12:00 AM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Usage -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Advanced Usage</h2>
+                <p>Explore advanced features and programmatic control</p>
+            </div>
+            <div class="grid grid-2">
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">⚙️</span>
+                        Custom Container and Location
+                    </div>
+                    <p class="card-description">Initialize with custom containers and specific coordinates for precise control over sky placement and location.</p>
+                    <div class="code-accordion">
+                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <span>Code</span>
+                        </div>
+                        <div class="code-accordion-content">
+                            <div class="code-block">
+                                <pre><code class="language-markup">&lt;!-- Custom containers --&gt;
+&lt;div id="my-sky"&gt;&lt;/div&gt;
+&lt;div id="my-stars"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+  // Initialize with custom containers and location
+  const sky = new DynamicSky({
+    skyContainer: '#my-sky',
+    starsContainer: '#my-stars',
+    latitude: 40.7128,  // New York
+    longitude: -74.0060
+  });
+  sky.init();
+&lt;/script&gt;</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🔄</span>
+                        Programmatic Control
+                    </div>
+                    <p class="card-description">Change the sky programmatically without user interaction. Perfect for automated updates or animations.</p>
+                    <div class="code-accordion">
+                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <span>Code</span>
+                        </div>
+                        <div class="code-accordion-content">
+                            <div class="code-block">
+                                <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky();
+  sky.init().then(() => {
+    // Update sky to specific time
+    const specificDate = new Date('2024-01-15T14:30:00');
+    sky.updateSky(specificDate);
+    
+    // Or use minutes (0-1440)
+    const minutes = 720; // 12:00 PM
+    sky.updateSky(sky.minutesToDate(minutes));
+  });
+&lt;/script&gt;</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🌍</span>
+                        Changing Location Dynamically
+                    </div>
+                    <p class="card-description">Update the location after initialization to show sky conditions at different places.</p>
+                    <div class="code-accordion">
+                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <span>Code</span>
+                        </div>
+                        <div class="code-accordion-content">
+                            <div class="code-block">
+                                <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky();
+  sky.init().then(() => {
+    // Change location to Tokyo
+    sky.setLocation(35.6762, 139.6503);
+    
+    // Update sky with current time at new location
+    sky.updateSky(new Date());
+  });
+&lt;/script&gt;</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">⏱️</span>
+                        Auto-Updating Sky
+                    </div>
+                    <p class="card-description">Keep the sky synchronized with the current time automatically.</p>
+                    <div class="code-accordion">
+                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <span>Code</span>
+                        </div>
+                        <div class="code-accordion-content">
+                            <div class="code-block">
+                                <pre><code class="language-markup">&lt;script&gt;
+  const sky = new DynamicSky();
+  sky.init().then(() => {
+    // Function to update sky to current time
+    function updateToCurrentTime() {
+      const now = new Date();
+      sky.updateSky(now);
+    }
+    
+    // Update immediately
+    updateToCurrentTime();
+    
+    // Update every minute
+    setInterval(updateToCurrentTime, 60000);
+  });
+&lt;/script&gt;</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Load DynamicSky Library (SunCalc is auto-loaded) -->
+    <script src="dynamic-sky.js"></script>
+    
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        // Helper function to format time
+        function formatTime(minutes) {
+            // Handle 1440 (24 hours) as 12:00 AM
+            if (minutes >= 1440) minutes = 0;
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            return `${displayHours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} ${ampm}`;
+        }
+        
+        // Location data
+        const locations = {
+            'new-york': { lat: 40.7128, lng: -74.0060, name: 'New York' },
+            'tokyo': { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
+            'london': { lat: 51.5074, lng: -0.1278, name: 'London' },
+            'sydney': { lat: -33.8688, lng: 151.2093, name: 'Sydney' }
+        };
+
+        // Initialize background sky - starts with current live time
+        const backgroundSky = new DynamicSky({
+            skyContainer: '#background-sky',
+            starsContainer: '#stars-container'
+        });
+        
+        backgroundSky.init().then(() => {
+            const backgroundSlider = document.getElementById('background-slider');
+            const backgroundTimeDisplay = document.getElementById('background-time');
+            let resetTimeout = null;
+            
+            function updateBackgroundSky() {
+                let minutes = parseInt(backgroundSlider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = backgroundSky.minutesToDate(minutes);
+                backgroundTimeDisplay.textContent = formatTime(minutes);
+                backgroundSky.updateSky(date);
+            }
+            
+            function resetToCurrentTime() {
+                const now = new Date();
+                const currentMinutes = backgroundSky.dateToMinutes(now);
+                const startMinutes = parseInt(backgroundSlider.value);
+                
+                // Only reset if not already at current time (within 1 minute tolerance)
+                if (Math.abs(currentMinutes - startMinutes) > 1) {
+                    // Smoothly animate slider to current time over 2 seconds
+                    const duration = 2000; // 2 seconds for smooth animation
+                    const steps = 60; // 60 steps for smooth animation
+                    const stepDuration = duration / steps;
+                    const stepSize = (currentMinutes - startMinutes) / steps;
+                    let step = 0;
+                    
+                    const animate = () => {
+                        if (step >= steps) {
+                            backgroundSlider.value = currentMinutes;
+                            updateBackgroundSky();
+                            return;
+                        }
+                        
+                        const progress = step / steps;
+                        // Ease-out function for smooth deceleration
+                        const easedProgress = 1 - Math.pow(1 - progress, 3);
+                        const currentValue = Math.round(startMinutes + (currentMinutes - startMinutes) * easedProgress);
+                        backgroundSlider.value = currentValue;
+                        updateBackgroundSky();
+                        step++;
+                        setTimeout(animate, stepDuration);
+                    };
+                    
+                    animate();
+                }
+            }
+            
+            function scheduleReset() {
+                // Clear any existing timeout
+                if (resetTimeout) {
+                    clearTimeout(resetTimeout);
+                }
+                
+                // Schedule reset after 5 seconds
+                resetTimeout = setTimeout(resetToCurrentTime, 5000);
+            }
+            
+            backgroundSlider.addEventListener('input', () => {
+                updateBackgroundSky();
+                scheduleReset(); // Reset the timer on each interaction
+            });
+            
+            // Initialize with current live time
+            const now = new Date();
+            const currentMinutes = backgroundSky.dateToMinutes(now);
+            backgroundSlider.value = currentMinutes;
+            backgroundTimeDisplay.textContent = formatTime(currentMinutes);
+            backgroundSky.updateSky(now);
+        });
+        
+        // Example 2: Weather App
+        const weatherSky = new DynamicSky({
+            skyContainer: '#weather-sky',
+            starsContainer: '#weather-stars'
+        });
+
+        weatherSky.init().then(() => {
+            const slider = document.getElementById('weather-slider');
+            const timeDisplay = document.getElementById('weather-time');
+            
+            function updateWeatherSky() {
+                let minutes = parseInt(slider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = weatherSky.minutesToDate(minutes);
+                timeDisplay.textContent = formatTime(minutes);
+                weatherSky.updateSky(date);
+            }
+            
+            slider.addEventListener('input', updateWeatherSky);
+            // Start at midnight (12:00 AM)
+            slider.value = 0;
+            updateWeatherSky();
+        });
+
+        // Example 3: Dashboard Widget with Programmatic Control
+        const dashboardSky = new DynamicSky({
+            skyContainer: '#dashboard-sky',
+            starsContainer: '#dashboard-stars'
+        });
+
+        dashboardSky.init().then(() => {
+            const slider = document.getElementById('dashboard-slider');
+            const timeDisplay = document.getElementById('dashboard-time');
+            
+            function updateDashboardSky() {
+                let minutes = parseInt(slider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = dashboardSky.minutesToDate(minutes);
+                timeDisplay.textContent = formatTime(minutes);
+                dashboardSky.updateSky(date);
+            }
+            
+            // Allow manual control if user interacts
+            slider.addEventListener('input', updateDashboardSky);
+            
+            // Programmatic control: Automatically cycle through the day
+            let currentMinutes = 0;
+            const cycleSpeed = 50; // Minutes per second (for demo purposes)
+            
+            function programmaticUpdate() {
+                currentMinutes += cycleSpeed;
+                
+                // Wrap around at 1440 (24 hours)
+                if (currentMinutes >= 1440) {
+                    currentMinutes = 0;
+                }
+                
+                // Update slider value programmatically
+                slider.value = currentMinutes;
+                updateDashboardSky();
+            }
+            
+            // Start at midnight
+            slider.value = 0;
+            updateDashboardSky();
+            
+            // Update every second (50 minutes per second = full day in ~28.8 seconds)
+            setInterval(programmaticUpdate, 1000);
+        });
+
+        // Example 4: Travel App
+        let currentTravelLocation = 'new-york';
+        const travelSky = new DynamicSky({
+            skyContainer: '#travel-sky',
+            starsContainer: '#travel-stars',
+            latitude: locations[currentTravelLocation].lat,
+            longitude: locations[currentTravelLocation].lng
+        });
+
+        travelSky.init().then(() => {
+            const slider = document.getElementById('travel-slider');
+            const timeDisplay = document.getElementById('travel-time');
+            const labelDisplay = document.getElementById('travel-label');
+            
+            function updateTravelSky() {
+                let minutes = parseInt(slider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = travelSky.minutesToDate(minutes);
+                timeDisplay.textContent = formatTime(minutes);
+                labelDisplay.textContent = `${locations[currentTravelLocation].name} - ${formatTime(minutes)}`;
+                travelSky.updateSky(date);
+            }
+            
+            slider.addEventListener('input', updateTravelSky);
+        
+            // Location buttons
+            document.querySelectorAll('.location-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTravelLocation = btn.dataset.location;
+                    travelSky.setLocation(
+                        locations[currentTravelLocation].lat,
+                        locations[currentTravelLocation].lng
+                    );
+                    updateTravelSky();
+                });
+            });
+            
+            // Start at midnight (12:00 AM)
+            slider.value = 0;
+            updateTravelSky();
+        });
+
+        // Example 5: Auto-Updating Sky
+        const autoSky = new DynamicSky({
+            skyContainer: '#auto-sky',
+            starsContainer: '#auto-stars'
+        });
+
+        autoSky.init().then(() => {
+            function updateAutoSky() {
+            const now = new Date();
+                const minutes = autoSky.dateToMinutes(now);
+                document.getElementById('auto-time-display').textContent = formatTime(minutes);
+                autoSky.updateSky(now);
+            }
+            
+            // Update immediately
+            updateAutoSky();
+            
+            // Update every minute
+            setInterval(updateAutoSky, 60000);
+        });
+
+        // Example 6: Product Card
+        const productSky = new DynamicSky({
+            skyContainer: '#product-sky',
+            starsContainer: '#product-stars'
+        });
+
+        productSky.init().then(() => {
+            const slider = document.getElementById('product-slider');
+            const timeDisplay = document.getElementById('product-time');
+            
+            function updateProductSky() {
+                let minutes = parseInt(slider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = productSky.minutesToDate(minutes);
+                timeDisplay.textContent = formatTime(minutes);
+                productSky.updateSky(date);
+            }
+            
+            slider.addEventListener('input', updateProductSky);
+            // Start at midnight (12:00 AM)
+            slider.value = 0;
+            updateProductSky();
+        });
+
+        // Example 7: Time Comparison (Morning, Noon, Evening)
+        const morningSky = new DynamicSky({
+            skyContainer: '#morning-sky',
+            starsContainer: '#morning-stars'
+        });
+
+        const noonSky = new DynamicSky({
+            skyContainer: '#noon-sky',
+            starsContainer: '#noon-stars'
+        });
+
+        const eveningSky = new DynamicSky({
+            skyContainer: '#evening-sky',
+            starsContainer: '#evening-stars'
+        });
+
+        Promise.all([
+            morningSky.init(),
+            noonSky.init(),
+            eveningSky.init()
+        ]).then(() => {
+            // Morning: 6 AM
+            morningSky.updateSky(morningSky.minutesToDate(360));
+            // Noon: 12 PM
+            noonSky.updateSky(noonSky.minutesToDate(720));
+            // Evening: 6 PM
+            eveningSky.updateSky(eveningSky.minutesToDate(1080));
+        });
+
+        // Example 8: Location Comparison
+        const comparisonLocations = [
+            { lat: 37.7749, lng: -122.4194, name: 'San Francisco' },
+            { lat: 40.7128, lng: -74.0060, name: 'New York' },
+            { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
+            { lat: 51.5074, lng: -0.1278, name: 'London' }
+        ];
+
+        const comparisonSkies = comparisonLocations.map((loc, index) => {
+            return new DynamicSky({
+                skyContainer: `#compare-${index + 1}-sky`,
+                starsContainer: `#compare-${index + 1}-stars`,
+                latitude: loc.lat,
+                longitude: loc.lng
+            });
+        });
+
+        Promise.all(comparisonSkies.map(sky => sky.init())).then(() => {
+            const slider = document.getElementById('compare-slider');
+            const timeDisplay = document.getElementById('compare-time');
+            
+            function updateComparison() {
+                let minutes = parseInt(slider.value);
+                // Handle 1440 as 0 (both represent midnight)
+                if (minutes >= 1440) minutes = 0;
+                const date = comparisonSkies[0].minutesToDate(minutes);
+                timeDisplay.textContent = formatTime(minutes);
+                
+                comparisonSkies.forEach(sky => {
+                    sky.updateSky(date);
+                });
+            }
+            
+            slider.addEventListener('input', updateComparison);
+            // Start at midnight (12:00 AM)
+            slider.value = 0;
+            updateComparison();
+        });
+
+        // Smooth scroll animation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
