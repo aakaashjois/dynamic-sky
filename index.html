@@ -26,8 +26,8 @@
             --text-tertiary: rgba(255, 255, 255, 0.5);
             --accent: #60a5fa;
             --accent-hover: #3b82f6;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
             --radius: 16px;
             --radius-sm: 8px;
         }
@@ -91,6 +91,99 @@
             box-shadow: var(--shadow);
         }
         
+        /* Footer Copyright Card */
+        .copyright-card {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+        
+        .copyright-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.15) 0%,
+                rgba(0, 0, 0, 0.08) 50%,
+                rgba(0, 0, 0, 0.15) 100%
+            );
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .copyright-card p {
+            position: relative;
+            z-index: 1;
+            margin: 0;
+        }
+        
+        /* GitHub Link Button */
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            margin-top: 1rem;
+        }
+        
+        .github-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.15) 0%,
+                rgba(0, 0, 0, 0.08) 50%,
+                rgba(0, 0, 0, 0.15) 100%
+            );
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .github-link > * {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .github-link:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.15), 0 2px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .github-icon {
+            font-size: 1.2rem;
+        }
+        
         /* Container */
         .container {
             max-width: 1400px;
@@ -135,10 +228,35 @@
             padding: 2rem;
             box-shadow: var(--shadow);
             transition: box-shadow 0.3s ease;
+            position: relative;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.15) 0%,
+                rgba(0, 0, 0, 0.08) 50%,
+                rgba(0, 0, 0, 0.15) 100%
+            );
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .card > * {
+            position: relative;
+            z-index: 1;
         }
         
         .card:hover {
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3), 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.15), 0 2px 12px rgba(0, 0, 0, 0.15);
         }
         
         /* Use Case Card Styles - Consistent structure */
@@ -251,6 +369,18 @@
         .card p:not(.card-description) {
             font-weight: 500;
             color: var(--text-primary);
+        }
+        
+        .card a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        
+        .card a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
         }
         
         /* Grid Layouts */
@@ -806,6 +936,13 @@
                         Flexible Integration
                     </div>
                     <p class="card-description">Works as full-page background or contained element. Easy to integrate into any design.</p>
+                </div>
+                <div class="card fade-in-up">
+                    <div class="card-title">
+                        <span class="card-icon">🔓</span>
+                        Full Open Source
+                    </div>
+                    <p class="card-description">Completely open source and free to use. <a href="https://github.com/aakaashjois/dynamic-sky" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none; font-weight: 600; transition: color 0.2s ease;">Explore on GitHub →</a></p>
                 </div>
             </div>
         </div>
@@ -1846,8 +1983,10 @@
             });
         });
     </script>
-    <footer style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem; font-weight: 600; position: relative; z-index: 1;">
-        <p>© 2025 Aakaash Jois</p>
+    <footer style="text-align: center; padding: 2rem; position: relative; z-index: 1;">
+        <div class="copyright-card">
+            <p style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">© 2025 Aakaash Jois</p>
+        </div>
     </footer>
 </body>
 </html>
