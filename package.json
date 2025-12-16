@@ -1,5 +1,6 @@
 {
   "name": "dynamic-sky",
   "version": "0.0.0",
-  "main": "dynamic-sky.js"
+  "main": "dynamic-sky.js",
+  "license": "Apache-2.0"
 }

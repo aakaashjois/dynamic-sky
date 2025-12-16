@@ -2,7 +2,7 @@
 
 > A beautiful vanilla JavaScript library for rendering dynamic sky backgrounds with realistic atmospheric scattering, animated starfields, and seamless time control.
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Apache 2.0 License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JS-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
 Transform your web projects with stunning, physically-accurate sky renders that respond to time and location. Watch the sky transition from brilliant blue day to star-filled night, complete with atmospheric scattering and animated celestial bodies.
@@ -381,7 +381,9 @@ Note: Slider styling is entirely up to you - DynamicSky doesn't provide any slid
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the LICENSE file for details.
+Copyright 2025 Aakaash Jois
+
+This project is licensed under the **Apache License 2.0** - see the LICENSE file for details.
 
 ---
 
