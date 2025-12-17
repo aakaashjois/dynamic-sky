@@ -469,6 +469,9 @@
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-primary);
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
         }
         
         .use-case-card .slider-label {
@@ -1007,7 +1010,7 @@
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
                                         <div class="slider-label">
-                                            <span>Background Sky Time</span>
+                                            <label for="background-slider">Background Sky Time</label>
                                             <span id="background-time">12:00 AM</span>
                                         </div>
                                         <input type="range" class="time-slider" id="background-slider" min="0" max="1440" step="1" value="0">
@@ -1020,9 +1023,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;div id="background-sky"&gt;&lt;/div&gt;
@@ -1060,7 +1063,7 @@
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
                                         <div class="slider-label">
-                                            <span>Time of Day</span>
+                                            <label for="weather-slider">Time of Day</label>
                                             <span id="weather-time">12:00 AM</span>
                                         </div>
                                         <input type="range" class="time-slider" id="weather-slider" min="0" max="1440" step="1" value="0">
@@ -1080,9 +1083,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;div id="weather-sky"&gt;&lt;/div&gt;
@@ -1124,7 +1127,7 @@
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
                                         <div class="slider-label">
-                                            <span>Time (Auto-Controlled)</span>
+                                            <label for="dashboard-slider">Time (Auto-Controlled)</label>
                                             <span id="dashboard-time">12:00 AM</span>
                                         </div>
                                         <input type="range" class="time-slider" id="dashboard-slider" min="0" max="1440" step="1" value="0">
@@ -1144,9 +1147,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;script&gt;
@@ -1187,7 +1190,7 @@
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
                                         <div class="slider-label">
-                                            <span>Local Time</span>
+                                            <label for="travel-slider">Local Time</label>
                                             <span id="travel-time">12:00 AM</span>
                                         </div>
                                         <input type="range" class="time-slider" id="travel-slider" min="0" max="1440" step="1" value="0">
@@ -1207,9 +1210,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;script&gt;
@@ -1259,9 +1262,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;script&gt;
@@ -1297,7 +1300,7 @@
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
                                         <div class="slider-label">
-                                            <span>Sky Time</span>
+                                            <label for="product-slider">Sky Time</label>
                                             <span id="product-time">12:00 AM</span>
                                         </div>
                                         <input type="range" class="time-slider" id="product-slider" min="0" max="1440" step="1" value="0">
@@ -1322,9 +1325,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;div style="position: relative;"&gt;
@@ -1383,9 +1386,9 @@
                             Multiple sky instances showing different times simultaneously
                         </p>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;script&gt;
@@ -1454,9 +1457,9 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                                 <span>Code</span>
-                            </div>
+                            </button>
                             <div class="code-accordion-content">
                                 <div class="code-block">
                                     <pre><code class="language-markup">&lt;script&gt;
@@ -1489,7 +1492,7 @@
                         <div style="text-align: center;">
                             <div class="slider-container" style="max-width: 500px; margin: 0 auto;">
                                 <div class="slider-label">
-                                    <span>Compare Time</span>
+                                    <label for="compare-slider">Compare Time</label>
                                     <span id="compare-time">12:00 AM</span>
                                 </div>
                                 <input type="range" class="time-slider" id="compare-slider" min="0" max="1440" step="1" value="0">
@@ -1520,9 +1523,9 @@
                     </div>
                     <p class="card-description">Initialize with custom containers and specific coordinates for precise control over sky placement and location.</p>
                     <div class="code-accordion">
-                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                             <span>Code</span>
-                        </div>
+                        </button>
                         <div class="code-accordion-content">
                             <div class="code-block">
                                 <pre><code class="language-markup">&lt;!-- Custom containers --&gt;
@@ -1551,9 +1554,9 @@
                     </div>
                     <p class="card-description">Change the sky programmatically without user interaction. Perfect for automated updates or animations.</p>
                     <div class="code-accordion">
-                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                             <span>Code</span>
-                        </div>
+                        </button>
                         <div class="code-accordion-content">
                             <div class="code-block">
                                 <pre><code class="language-markup">&lt;script&gt;
@@ -1580,9 +1583,9 @@
                     </div>
                     <p class="card-description">Update the location after initialization to show sky conditions at different places.</p>
                     <div class="code-accordion">
-                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                             <span>Code</span>
-                        </div>
+                        </button>
                         <div class="code-accordion-content">
                             <div class="code-block">
                                 <pre><code class="language-markup">&lt;script&gt;
@@ -1607,9 +1610,9 @@
                     </div>
                     <p class="card-description">Keep the sky synchronized with the current time automatically.</p>
                     <div class="code-accordion">
-                        <div class="code-accordion-header" onclick="this.classList.toggle('expanded'); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
                             <span>Code</span>
-                        </div>
+                        </button>
                         <div class="code-accordion-content">
                             <div class="code-block">
                                 <pre><code class="language-markup">&lt;script&gt;
