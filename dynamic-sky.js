@@ -22,6 +22,152 @@
   'use strict';
 
   // ============================================================================
+  // Constants & Helpers for Physics
+  // ============================================================================
+
+  var PI = Math.PI;
+  var RAYLEIGH_SCATTER = [5.802e-6, 13.558e-6, 33.1e-6];
+  var MIE_SCATTER = 3.996e-6;
+  var MIE_ABSORB = 4.44e-6;
+  var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
+  var RAYLEIGH_SCALE_HEIGHT = 8e3;
+  var MIE_SCALE_HEIGHT = 1.2e3;
+  var GROUND_RADIUS = 6360000;
+  var TOP_RADIUS = 6460000;
+  var SUN_INTENSITY = 1.0;
+  var GRADIENT_SAMPLES = 32;
+  var INTEGRATION_SAMPLES = 8;
+  var FOV_DEG = 75;
+  var EXPOSURE = 25.0;
+  var GAMMA = 2.2;
+  var SUNSET_BIAS_STRENGTH = 0.1;
+
+  function aces(color) {
+    return color.map(function(c) {
+      var n = c * (2.51 * c + 0.03);
+      var d = c * (2.43 * c + 0.59) + 0.14;
+      return Math.max(0, Math.min(1, n / d));
+    });
+  }
+
+  function applySunsetBias(rgb) {
+    var r = rgb[0], g = rgb[1], b = rgb[2];
+    var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    var w = 1.0 / (1.0 + 2.0 * lum);
+    var k = SUNSET_BIAS_STRENGTH;
+    var rb = 1.0 + 0.5 * k * w;
+    var gb = 1.0 - 0.5 * k * w;
+    var bb = 1.0 + 1.0 * k * w;
+    return [Math.max(0, r * rb), Math.max(0, g * gb), Math.max(0, b * bb)];
+  }
+
+  function rayleighPhase(angle) {
+    return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
+  }
+
+  function miePhase(angle) {
+    var g = 0.8;
+    var scale = 3 / (8 * PI);
+    var num = (1 - Math.pow(g, 2)) * (1 + Math.pow(Math.cos(angle), 2));
+    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * Math.cos(angle), 3 / 2);
+    return (scale * num) / denom;
+  }
+
+  function intersectSphere(p, d, r) {
+    // p and d are [x,y,z] arrays
+    // inlined dot product: p[0]*d[0] + p[1]*d[1] + p[2]*d[2]
+    var bx = p[0] * d[0] + p[1] * d[1] + p[2] * d[2];
+    var b = bx;
+    // inlined dot product: p dot p
+    var cx = p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
+    var c = cx - Math.pow(r, 2);
+    var discr = Math.pow(b, 2) - c;
+    if (discr < 0) return null;
+    var sqrtDiscr = Math.sqrt(discr);
+    var t = -b - sqrtDiscr;
+    if (t < 0) return -b + sqrtDiscr;
+    return t;
+  }
+
+  // Pre-allocate arrays to reduce garbage collection in hot loops
+  // NOTE: This makes the function not thread-safe, but JS is single threaded.
+  // However, recursion would be an issue. computeTransmittance is not recursive.
+  function computeTransmittance(height, angle) {
+    var rayOriginX = 0;
+    var rayOriginY = GROUND_RADIUS + height;
+    var rayOriginZ = 0;
+
+    var rayDirectionX = Math.sin(angle);
+    var rayDirectionY = Math.cos(angle);
+    var rayDirectionZ = 0;
+
+    // intersectSphere inlined logic optimized for specific inputs?
+    // No, reusing general logic but without array allocations if possible.
+    // intersectSphere takes arrays. Let's keep it taking arrays for now or modify it?
+    // Let's use the helper but pass arrays. To avoid array creation, we might need to change signature.
+    // For now, let's just inline the logic of intersectSphere here since we have components.
+
+    var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
+    var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
+    var discr = b * b - c;
+
+    var distance;
+    if (discr < 0) distance = null;
+    else {
+      var sqrtDiscr = Math.sqrt(discr);
+      var t = -b - sqrtDiscr;
+      if (t < 0) distance = -b + sqrtDiscr;
+      else distance = t;
+    }
+
+    if (distance === null) return [1, 1, 1];
+
+    var segmentLength = distance / INTEGRATION_SAMPLES;
+    var tCurrent = 0.5 * segmentLength;
+
+    var odRayleigh = 0;
+    var odMie = 0;
+    var odOzone = 0;
+
+    for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
+      // pos = rayOrigin + rayDirection * tCurrent
+      var posX = rayOriginX + rayDirectionX * tCurrent;
+      var posY = rayOriginY + rayDirectionY * tCurrent;
+      var posZ = rayOriginZ + rayDirectionZ * tCurrent;
+
+      var lenPos = Math.hypot(posX, posY, posZ);
+      var h = lenPos - GROUND_RADIUS;
+
+      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
+      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
+      odRayleigh += dR * segmentLength;
+
+      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
+      odOzone += ozoneDensity * segmentLength;
+      odMie += dM * segmentLength;
+
+      tCurrent += segmentLength;
+    }
+
+    var tauR0 = RAYLEIGH_SCATTER[0] * odRayleigh;
+    var tauR1 = RAYLEIGH_SCATTER[1] * odRayleigh;
+    var tauR2 = RAYLEIGH_SCATTER[2] * odRayleigh;
+
+    var tauM = MIE_ABSORB * odMie; // All components same
+
+    var tauO0 = OZONE_ABSORB[0] * odOzone;
+    var tauO1 = OZONE_ABSORB[1] * odOzone;
+    var tauO2 = OZONE_ABSORB[2] * odOzone;
+
+    // Return exp(-(tauR + tauM + tauO))
+    return [
+      Math.exp(-(tauR0 + tauM + tauO0)),
+      Math.exp(-(tauR1 + tauM + tauO1)),
+      Math.exp(-(tauR2 + tauM + tauO2))
+    ];
+  }
+
+  // ============================================================================
   // Inject CSS Styles
   // ============================================================================
   
@@ -201,17 +347,8 @@
     return [v[0] / l, v[1] / l, v[2] / l];
   }
 
-  function add(v1, v2) {
-    return [v1[0] + v2[0], v1[1] + v2[1], v1[2] + v2[2]];
-  }
-
-  function scale(v, s) {
-    return [v[0] * s, v[1] * s, v[2] * s];
-  }
-
-  function exp(v) {
-    return [Math.exp(v[0]), Math.exp(v[1]), Math.exp(v[2])];
-  }
+  // Note: add, scale, exp removed from here as they are now inlined or unused in global scope
+  // except inside renderGradient where we optimize them out.
 
   /**
    * DynamicSky Class
@@ -659,141 +796,78 @@
   };
 
   DynamicSky.prototype.renderGradient = function(altitude) {
-    var PI = Math.PI;
-    var RAYLEIGH_SCATTER = [5.802e-6, 13.558e-6, 33.1e-6];
-    var MIE_SCATTER = 3.996e-6;
-    var MIE_ABSORB = 4.44e-6;
-    var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
-    var RAYLEIGH_SCALE_HEIGHT = 8e3;
-    var MIE_SCALE_HEIGHT = 1.2e3;
-    var GROUND_RADIUS = 6360000;
-    var TOP_RADIUS = 6460000;
-    var SUN_INTENSITY = 1.0;
-    var GRADIENT_SAMPLES = 32;
-    var INTEGRATION_SAMPLES = 8;
-    var FOV_DEG = 75;
-    var EXPOSURE = 25.0;
-    var GAMMA = 2.2;
-    var SUNSET_BIAS_STRENGTH = 0.1;
+    var cameraPositionX = 0;
+    var cameraPositionY = GROUND_RADIUS;
+    var cameraPositionZ = 0;
 
-    function aces(color) {
-      return color.map(function(c) {
-        var n = c * (2.51 * c + 0.03);
-        var d = c * (2.43 * c + 0.59) + 0.14;
-        return Math.max(0, Math.min(1, n / d));
-      });
-    }
+    // norm([Math.cos(altitude), Math.sin(altitude), 0])
+    // The vector is already normalized as cos^2 + sin^2 = 1.
+    var sunDirectionX = Math.cos(altitude);
+    var sunDirectionY = Math.sin(altitude);
+    var sunDirectionZ = 0;
 
-    function applySunsetBias(rgb) {
-      var r = rgb[0], g = rgb[1], b = rgb[2];
-      var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      var w = 1.0 / (1.0 + 2.0 * lum);
-      var k = SUNSET_BIAS_STRENGTH;
-      var rb = 1.0 + 0.5 * k * w;
-      var gb = 1.0 - 0.5 * k * w;
-      var bb = 1.0 + 1.0 * k * w;
-      return [Math.max(0, r * rb), Math.max(0, g * gb), Math.max(0, b * bb)];
-    }
-
-    function rayleighPhase(angle) {
-      return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
-    }
-
-    function miePhase(angle) {
-      var g = 0.8;
-      var scale = 3 / (8 * PI);
-      var num = (1 - Math.pow(g, 2)) * (1 + Math.pow(Math.cos(angle), 2));
-      var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * Math.cos(angle), 3 / 2);
-      return (scale * num) / denom;
-    }
-
-    function intersectSphere(p, d, r) {
-      var m = p;
-      var b = dot(m, d);
-      var c = dot(m, m) - Math.pow(r, 2);
-      var discr = Math.pow(b, 2) - c;
-      if (discr < 0) return null;
-      var t = -b - Math.sqrt(discr);
-      if (t < 0) return -b + Math.sqrt(discr);
-      return t;
-    }
-
-    function computeTransmittance(height, angle) {
-      var rayOrigin = [0, GROUND_RADIUS + height, 0];
-      var rayDirection = [Math.sin(angle), Math.cos(angle), 0];
-      var distance = intersectSphere(rayOrigin, rayDirection, TOP_RADIUS);
-      if (!distance) return [1, 1, 1];
-
-      var segmentLength = distance / INTEGRATION_SAMPLES;
-      var t = 0.5 * segmentLength;
-
-      var odRayleigh = 0;
-      var odMie = 0;
-      var odOzone = 0;
-      for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
-        var pos = add(rayOrigin, scale(rayDirection, t));
-        var h = len(pos) - GROUND_RADIUS;
-        var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-        var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
-        odRayleigh += dR * segmentLength;
-        var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
-        odOzone += ozoneDensity * segmentLength;
-        odMie += dM * segmentLength;
-        t += segmentLength;
-      }
-
-      var tauR = [
-        RAYLEIGH_SCATTER[0] * odRayleigh,
-        RAYLEIGH_SCATTER[1] * odRayleigh,
-        RAYLEIGH_SCATTER[2] * odRayleigh,
-      ];
-      var tauM = [MIE_ABSORB * odMie, MIE_ABSORB * odMie, MIE_ABSORB * odMie];
-      var tauO = [
-        OZONE_ABSORB[0] * odOzone,
-        OZONE_ABSORB[1] * odOzone,
-        OZONE_ABSORB[2] * odOzone,
-      ];
-
-      var tau = [
-        -(tauR[0] + tauM[0] + tauO[0]),
-        -(tauR[1] + tauM[1] + tauO[1]),
-        -(tauR[2] + tauM[2] + tauO[2]),
-      ];
-      return exp(tau);
-    }
-
-    var cameraPosition = [0, GROUND_RADIUS, 0];
-    var sunDirection = norm([Math.cos(altitude), Math.sin(altitude), 0]);
     var focalZ = 1.0 / Math.tan((FOV_DEG * 0.5 * PI) / 180.0);
 
     var stops = [];
+
+    // Helper to clamp values in stops
+    function clampVal(x) {
+      return x < 0 ? 0 : (x > 1 ? 1 : x);
+    }
+
     for (var i = 0; i < GRADIENT_SAMPLES; i++) {
       var s = i / (GRADIENT_SAMPLES - 1);
-      var viewDirection = norm([0, s, focalZ]);
-      var inscattered = [0, 0, 0];
 
-      var tExitTop = intersectSphere(cameraPosition, viewDirection, TOP_RADIUS);
+      // viewDirection = norm([0, s, focalZ])
+      var vdX = 0;
+      var vdY = s;
+      var vdZ = focalZ;
+      var vdLen = Math.hypot(vdX, vdY, vdZ) || 1;
+      vdX /= vdLen;
+      vdY /= vdLen;
+      vdZ /= vdLen;
+
+      var inscatteredX = 0;
+      var inscatteredY = 0;
+      var inscatteredZ = 0;
+
+      // intersectSphere(cameraPosition, viewDirection, TOP_RADIUS)
+      // cameraPosition is 0, GROUND_RADIUS, 0
+      var b = cameraPositionY * vdY; // other terms are 0
+      var c = (cameraPositionY * cameraPositionY) - (TOP_RADIUS * TOP_RADIUS);
+      var discr = b * b - c;
+
+      var tExitTop = null;
+      if (discr >= 0) {
+        var sqrtDiscr = Math.sqrt(discr);
+        var t = -b - sqrtDiscr;
+        if (t < 0) t = -b + sqrtDiscr;
+        tExitTop = t;
+      }
+
       if (tExitTop !== null && tExitTop > 0) {
-        var rayOrigin = [cameraPosition[0], cameraPosition[1], cameraPosition[2]];
+        var rayOriginX = cameraPositionX;
+        var rayOriginY = cameraPositionY;
+        var rayOriginZ = cameraPositionZ;
+
         var segmentLength = tExitTop / INTEGRATION_SAMPLES;
         var tRay = segmentLength * 0.5;
 
-        var rayOriginRadius = len(rayOrigin);
-        var isRayPointingDownwardAtStart =
-          dot(rayOrigin, viewDirection) / rayOriginRadius < 0.0;
+        // rayOriginRadius is just cameraPositionY because x and z are 0
+        var rayOriginRadius = cameraPositionY;
+
+        // dot(rayOrigin, viewDirection) -> rayOriginY * vdY
+        var isRayPointingDownwardAtStart = (rayOriginY * vdY) / rayOriginRadius < 0.0;
+
         var startHeight = rayOriginRadius - GROUND_RADIUS;
-        var startRayCos = clamp(
-          dot(
-            [
-              rayOrigin[0] / rayOriginRadius,
-              rayOrigin[1] / rayOriginRadius,
-              rayOrigin[2] / rayOriginRadius,
-            ],
-            viewDirection
-          ),
-          -1,
-          1
-        );
+
+        // startRayCos = clamp(dot(rayOrigin/radius, viewDirection), -1, 1)
+        // rayOrigin/radius is [0, 1, 0]
+        // dot is vdY
+        var startRayCos = vdY;
+        if (startRayCos < -1) startRayCos = -1;
+        if (startRayCos > 1) startRayCos = 1;
+
         var startRayAngle = Math.acos(Math.abs(startRayCos));
         var transmittanceCameraToSpace = computeTransmittance(
           startHeight,
@@ -801,17 +875,29 @@
         );
 
         for (var j = 0; j < INTEGRATION_SAMPLES; j++) {
-          var samplePos = add(rayOrigin, scale(viewDirection, tRay));
-          var sampleRadius = len(samplePos);
-          var upUnit = [
-            samplePos[0] / sampleRadius,
-            samplePos[1] / sampleRadius,
-            samplePos[2] / sampleRadius,
-          ];
+          // samplePos = rayOrigin + viewDirection * tRay
+          var samplePosX = rayOriginX + vdX * tRay;
+          var samplePosY = rayOriginY + vdY * tRay;
+          var samplePosZ = rayOriginZ + vdZ * tRay;
+
+          var sampleRadius = Math.hypot(samplePosX, samplePosY, samplePosZ);
+
+          var upUnitX = samplePosX / sampleRadius;
+          var upUnitY = samplePosY / sampleRadius;
+          var upUnitZ = samplePosZ / sampleRadius;
+
           var sampleHeight = sampleRadius - GROUND_RADIUS;
 
-          var viewCos = clamp(dot(upUnit, viewDirection), -1, 1);
-          var sunCos = clamp(dot(upUnit, sunDirection), -1, 1);
+          // viewCos = clamp(dot(upUnit, viewDirection), -1, 1)
+          var viewCos = upUnitX * vdX + upUnitY * vdY + upUnitZ * vdZ;
+          if (viewCos < -1) viewCos = -1;
+          if (viewCos > 1) viewCos = 1;
+
+          // sunCos = clamp(dot(upUnit, sunDirection), -1, 1)
+          var sunCos = upUnitX * sunDirectionX + upUnitY * sunDirectionY + upUnitZ * sunDirectionZ;
+          if (sunCos < -1) sunCos = -1;
+          if (sunCos > 1) sunCos = 1;
+
           var viewAngle = Math.acos(Math.abs(viewCos));
           var sunAngle = Math.acos(sunCos);
 
@@ -819,11 +905,17 @@
             sampleHeight,
             viewAngle
           );
-          var transmittanceCameraToSample = [0, 0, 0];
-          for (var k = 0; k < 3; k++) {
-            transmittanceCameraToSample[k] = isRayPointingDownwardAtStart
-              ? transmittanceToSpace[k] / transmittanceCameraToSpace[k]
-              : transmittanceCameraToSpace[k] / transmittanceToSpace[k];
+
+          var transmittanceCameraToSample0, transmittanceCameraToSample1, transmittanceCameraToSample2;
+
+          if (isRayPointingDownwardAtStart) {
+            transmittanceCameraToSample0 = transmittanceToSpace[0] / transmittanceCameraToSpace[0];
+            transmittanceCameraToSample1 = transmittanceToSpace[1] / transmittanceCameraToSpace[1];
+            transmittanceCameraToSample2 = transmittanceToSpace[2] / transmittanceCameraToSpace[2];
+          } else {
+            transmittanceCameraToSample0 = transmittanceCameraToSpace[0] / transmittanceToSpace[0];
+            transmittanceCameraToSample1 = transmittanceCameraToSpace[1] / transmittanceToSpace[1];
+            transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
           var transmittanceLight = computeTransmittance(sampleHeight, sunAngle);
@@ -831,37 +923,89 @@
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
           var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
-          var sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1);
+
+          // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
+          var sunViewCos = sunDirectionX * vdX + sunDirectionY * vdY + sunDirectionZ * vdZ;
+          if (sunViewCos < -1) sunViewCos = -1;
+          if (sunViewCos > 1) sunViewCos = 1;
+
           var sunViewAngle = Math.acos(sunViewCos);
           var phaseR = rayleighPhase(sunViewAngle);
           var phaseM = miePhase(sunViewAngle);
 
-          var scatteredRgb = [0, 0, 0];
-          for (var k = 0; k < 3; k++) {
-            var rayleighTerm = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR;
-            var mieTerm = MIE_SCATTER * opticalDensityMie * phaseM;
-            scatteredRgb[k] = transmittanceLight[k] * (rayleighTerm + mieTerm);
-          }
+          // Rayleight and Mie terms
+          // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
+          // mieTerm = MIE_SCATTER * opticalDensityMie * phaseM (same for all channels)
 
-          for (var k = 0; k < 3; k++) {
-            inscattered[k] +=
-              transmittanceCameraToSample[k] * scatteredRgb[k] * segmentLength;
-          }
+          var mieTerm = MIE_SCATTER * opticalDensityMie * phaseM;
+
+          var rayleighTerm0 = RAYLEIGH_SCATTER[0] * opticalDensityRay * phaseR;
+          var scatteredRgb0 = transmittanceLight[0] * (rayleighTerm0 + mieTerm);
+
+          var rayleighTerm1 = RAYLEIGH_SCATTER[1] * opticalDensityRay * phaseR;
+          var scatteredRgb1 = transmittanceLight[1] * (rayleighTerm1 + mieTerm);
+
+          var rayleighTerm2 = RAYLEIGH_SCATTER[2] * opticalDensityRay * phaseR;
+          var scatteredRgb2 = transmittanceLight[2] * (rayleighTerm2 + mieTerm);
+
+          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0 * segmentLength;
+          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1 * segmentLength;
+          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2 * segmentLength;
+
           tRay += segmentLength;
         }
 
-        for (var k = 0; k < 3; k++) inscattered[k] *= SUN_INTENSITY;
+        inscatteredX *= SUN_INTENSITY;
+        inscatteredY *= SUN_INTENSITY;
+        inscatteredZ *= SUN_INTENSITY;
       }
 
-      var color = [inscattered[0], inscattered[1], inscattered[2]];
-      color = color.map(function(c) { return c * EXPOSURE; });
-      color = applySunsetBias(color);
-      color = aces(color);
-      color = color.map(function(c) { return Math.pow(c, 1.0 / GAMMA); });
-      var rgb = color.map(function(c) { return Math.round(clamp(c, 0, 1) * 255); });
+      // Exposure
+      var c0 = inscatteredX * EXPOSURE;
+      var c1 = inscatteredY * EXPOSURE;
+      var c2 = inscatteredZ * EXPOSURE;
+
+      // Apply Sunset Bias
+      var lum = 0.2126 * c0 + 0.7152 * c1 + 0.0722 * c2;
+      var w = 1.0 / (1.0 + 2.0 * lum);
+      var k = SUNSET_BIAS_STRENGTH;
+      var rb = 1.0 + 0.5 * k * w;
+      var gb = 1.0 - 0.5 * k * w;
+      var bb = 1.0 + 1.0 * k * w;
+
+      c0 = Math.max(0, c0 * rb);
+      c1 = Math.max(0, c1 * gb);
+      c2 = Math.max(0, c2 * bb);
+
+      // ACES Tone Mapping (inlined)
+      // n = c * (2.51 * c + 0.03)
+      // d = c * (2.43 * c + 0.59) + 0.14
+      // val = n / d
+
+      var n0 = c0 * (2.51 * c0 + 0.03);
+      var d0 = c0 * (2.43 * c0 + 0.59) + 0.14;
+      c0 = Math.max(0, Math.min(1, n0 / d0));
+
+      var n1 = c1 * (2.51 * c1 + 0.03);
+      var d1 = c1 * (2.43 * c1 + 0.59) + 0.14;
+      c1 = Math.max(0, Math.min(1, n1 / d1));
+
+      var n2 = c2 * (2.51 * c2 + 0.03);
+      var d2 = c2 * (2.43 * c2 + 0.59) + 0.14;
+      c2 = Math.max(0, Math.min(1, n2 / d2));
+
+      // Gamma Correction
+      var invGamma = 1.0 / GAMMA;
+      c0 = Math.pow(c0, invGamma);
+      c1 = Math.pow(c1, invGamma);
+      c2 = Math.pow(c2, invGamma);
+
+      var r = Math.round(clampVal(c0) * 255);
+      var g = Math.round(clampVal(c1) * 255);
+      var b = Math.round(clampVal(c2) * 255);
 
       var percent = (1 - s) * 100;
-      stops.push({ percent: percent, rgb: rgb });
+      stops.push({ percent: percent, rgb: [r, g, b] });
     }
 
     stops.sort(function(a, b) { return a.percent - b.percent; });
@@ -1052,4 +1196,3 @@
   global.DynamicSky = DynamicSky;
 
 })(typeof window !== 'undefined' ? window : this);
-
