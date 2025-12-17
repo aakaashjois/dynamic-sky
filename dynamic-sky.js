@@ -73,22 +73,6 @@
     return (scale * num) / denom;
   }
 
-  function intersectSphere(p, d, r) {
-    // p and d are [x,y,z] arrays
-    // inlined dot product: p[0]*d[0] + p[1]*d[1] + p[2]*d[2]
-    var bx = p[0] * d[0] + p[1] * d[1] + p[2] * d[2];
-    var b = bx;
-    // inlined dot product: p dot p
-    var cx = p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
-    var c = cx - Math.pow(r, 2);
-    var discr = Math.pow(b, 2) - c;
-    if (discr < 0) return null;
-    var sqrtDiscr = Math.sqrt(discr);
-    var t = -b - sqrtDiscr;
-    if (t < 0) return -b + sqrtDiscr;
-    return t;
-  }
-
   // Pre-allocate arrays to reduce garbage collection in hot loops
   // NOTE: This makes the function not thread-safe, but JS is single threaded.
   // However, recursion would be an issue. computeTransmittance is not recursive.
@@ -334,21 +318,7 @@
     return Math.max(min, Math.min(max, x));
   }
 
-  function dot(v1, v2) {
-    return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-  }
-
-  function len(v) {
-    return Math.hypot(v[0], v[1], v[2]);
-  }
-
-  function norm(v) {
-    const l = len(v) || 1;
-    return [v[0] / l, v[1] / l, v[2] / l];
-  }
-
-  // Note: add, scale, exp removed from here as they are now inlined or unused in global scope
-  // except inside renderGradient where we optimize them out.
+  // Note: add, scale, exp, dot, len, norm, intersectSphere removed as they are now inlined or unused.
 
   /**
    * DynamicSky Class
