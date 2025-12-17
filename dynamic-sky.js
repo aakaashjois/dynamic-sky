@@ -42,25 +42,6 @@
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
 
-  function aces(color) {
-    return color.map(function(c) {
-      var n = c * (2.51 * c + 0.03);
-      var d = c * (2.43 * c + 0.59) + 0.14;
-      return Math.max(0, Math.min(1, n / d));
-    });
-  }
-
-  function applySunsetBias(rgb) {
-    var r = rgb[0], g = rgb[1], b = rgb[2];
-    var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    var w = 1.0 / (1.0 + 2.0 * lum);
-    var k = SUNSET_BIAS_STRENGTH;
-    var rb = 1.0 + 0.5 * k * w;
-    var gb = 1.0 - 0.5 * k * w;
-    var bb = 1.0 + 1.0 * k * w;
-    return [Math.max(0, r * rb), Math.max(0, g * gb), Math.max(0, b * bb)];
-  }
-
   function rayleighPhase(angle) {
     return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
   }
@@ -74,8 +55,6 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  // NOTE: This makes the function not thread-safe, but JS is single threaded.
-  // However, recursion would be an issue. computeTransmittance is not recursive.
   function computeTransmittance(height, angle) {
     var rayOriginX = 0;
     var rayOriginY = GROUND_RADIUS + height;
@@ -84,12 +63,6 @@
     var rayDirectionX = Math.sin(angle);
     var rayDirectionY = Math.cos(angle);
     var rayDirectionZ = 0;
-
-    // intersectSphere inlined logic optimized for specific inputs?
-    // No, reusing general logic but without array allocations if possible.
-    // intersectSphere takes arrays. Let's keep it taking arrays for now or modify it?
-    // Let's use the helper but pass arrays. To avoid array creation, we might need to change signature.
-    // For now, let's just inline the logic of intersectSphere here since we have components.
 
     var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
     var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
@@ -903,7 +876,7 @@
           var phaseR = rayleighPhase(sunViewAngle);
           var phaseM = miePhase(sunViewAngle);
 
-          // Rayleight and Mie terms
+          // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
           // mieTerm = MIE_SCATTER * opticalDensityMie * phaseM (same for all channels)
 
