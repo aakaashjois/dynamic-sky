@@ -42,15 +42,15 @@
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
 
-  function rayleighPhase(angle) {
-    return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
+  function rayleighPhase(cosAngle) {
+    return (3 * (1 + cosAngle * cosAngle)) / (16 * PI);
   }
 
-  function miePhase(angle) {
+  function miePhase(cosAngle) {
     var g = 0.8;
     var scale = 3 / (8 * PI);
-    var num = (1 - Math.pow(g, 2)) * (1 + Math.pow(Math.cos(angle), 2));
-    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * Math.cos(angle), 3 / 2);
+    var num = (1 - Math.pow(g, 2)) * (1 + cosAngle * cosAngle);
+    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * cosAngle, 3 / 2);
     return (scale * num) / denom;
   }
 
@@ -817,6 +817,14 @@
           startRayAngle
         );
 
+        // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
+        var sunViewCos = sunDirectionX * vdX + sunDirectionY * vdY + sunDirectionZ * vdZ;
+        if (sunViewCos < -1) sunViewCos = -1;
+        if (sunViewCos > 1) sunViewCos = 1;
+
+        var phaseR = rayleighPhase(sunViewCos);
+        var phaseM = miePhase(sunViewCos);
+
         for (var j = 0; j < INTEGRATION_SAMPLES; j++) {
           // samplePos = rayOrigin + viewDirection * tRay
           var samplePosX = rayOriginX + vdX * tRay;
@@ -866,15 +874,6 @@
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
           var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
-
-          // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
-          var sunViewCos = sunDirectionX * vdX + sunDirectionY * vdY + sunDirectionZ * vdZ;
-          if (sunViewCos < -1) sunViewCos = -1;
-          if (sunViewCos > 1) sunViewCos = 1;
-
-          var sunViewAngle = Math.acos(sunViewCos);
-          var phaseR = rayleighPhase(sunViewAngle);
-          var phaseM = miePhase(sunViewAngle);
 
           // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
