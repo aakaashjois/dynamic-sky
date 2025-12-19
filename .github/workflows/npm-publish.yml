@@ -20,10 +20,5 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       # Sync the version number again
-      - name: Sync version
-        run: |
-          npm version ${GITHUB_REF_NAME#v} --no-git-tag-version
-
-      - run: npm ci
-      
+      - run: npm version ${GITHUB_REF_NAME#v} --no-git-tag-version
       - run: npm publish --provenance --access public
