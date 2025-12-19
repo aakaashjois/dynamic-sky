@@ -9,3 +9,7 @@
 ## 2025-12-17 - Custom Control Focus
 **Learning:** Removing default styles with `appearance: none` often removes focus indicators, leaving keyboard users lost.
 **Action:** Explicitly define `:focus-visible` styles whenever creating custom form controls to ensure keyboard navigability.
+
+## 2025-12-17 - High Contrast Accents
+**Learning:** Using white as an accent color on dark backgrounds improves visibility for UI controls but requires careful contrast management for text inside those controls (buttons, badges).
+**Action:** When setting a light accent color, ensure text on active/hover states is inverted (dark) to maintain WCAG contrast ratios. Links may need explicit underlining if color differentiation is lost.
