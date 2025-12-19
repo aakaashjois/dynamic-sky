@@ -225,30 +225,12 @@
     
     // Create promise for async loading
     sunCalcReadyPromise = new Promise(function(resolve, reject) {
-      // Try synchronous XHR first (works for same-origin or if CORS allows)
-      try {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js', false); // synchronous
-        xhr.send(null);
-        
-        if (xhr.status === 200 || xhr.status === 0) {
-          // Execute the fetched script
-          var script = xhr.responseText;
-          (new Function(script))();
-          
-          // Verify SunCalc was loaded
-          if (typeof global.SunCalc !== 'undefined') {
-            resolve();
-            return;
-          }
-        }
-      } catch (e) {
-        // Synchronous XHR failed (likely CORS), fall back to async script tag
-      }
-      
-      // Fall back to async script tag loading
+      // Async script tag loading with Subresource Integrity (SRI)
       var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js';
+      // Use unminified version for stable SRI hash as per security policy
+      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js';
+      script.integrity = 'sha384-oiKvfHOCwLd5BVeyS4Zc1WW9KNRFXyXCkijYVrNbvw6BzoPFC+HiHzZi8FlRAvQ3';
+      script.crossOrigin = 'anonymous';
       script.async = true;
       
       script.onload = function() {
