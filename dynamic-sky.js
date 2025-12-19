@@ -42,15 +42,15 @@
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
 
-  function rayleighPhase(angle) {
-    return (3 * (1 + Math.pow(Math.cos(angle), 2))) / (16 * PI);
+  function rayleighPhase(cosAngle) {
+    return (3 * (1 + cosAngle * cosAngle)) / (16 * PI);
   }
 
-  function miePhase(angle) {
+  function miePhase(cosAngle) {
     var g = 0.8;
     var scale = 3 / (8 * PI);
-    var num = (1 - Math.pow(g, 2)) * (1 + Math.pow(Math.cos(angle), 2));
-    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * Math.cos(angle), 3 / 2);
+    var num = (1 - Math.pow(g, 2)) * (1 + cosAngle * cosAngle);
+    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * cosAngle, 3 / 2);
     return (scale * num) / denom;
   }
 
@@ -226,30 +226,12 @@
     
     // Create promise for async loading
     sunCalcReadyPromise = new Promise(function(resolve, reject) {
-      // Try synchronous XHR first (works for same-origin or if CORS allows)
-      try {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js', false); // synchronous
-        xhr.send(null);
-        
-        if (xhr.status === 200 || xhr.status === 0) {
-          // Execute the fetched script
-          var script = xhr.responseText;
-          (new Function(script))();
-          
-          // Verify SunCalc was loaded
-          if (typeof global.SunCalc !== 'undefined') {
-            resolve();
-            return;
-          }
-        }
-      } catch (e) {
-        // Synchronous XHR failed (likely CORS), fall back to async script tag
-      }
-      
-      // Fall back to async script tag loading
+      // Async script tag loading with Subresource Integrity (SRI)
       var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.min.js';
+      // Use unminified version for stable SRI hash as per security policy
+      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js';
+      script.integrity = 'sha384-oiKvfHOCwLd5BVeyS4Zc1WW9KNRFXyXCkijYVrNbvw6BzoPFC+HiHzZi8FlRAvQ3';
+      script.crossOrigin = 'anonymous';
       script.async = true;
       
       script.onload = function() {
@@ -818,6 +800,14 @@
           startRayAngle
         );
 
+        // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
+        var sunViewCos = sunDirectionX * vdX + sunDirectionY * vdY + sunDirectionZ * vdZ;
+        if (sunViewCos < -1) sunViewCos = -1;
+        if (sunViewCos > 1) sunViewCos = 1;
+
+        var phaseR = rayleighPhase(sunViewCos);
+        var phaseM = miePhase(sunViewCos);
+
         for (var j = 0; j < INTEGRATION_SAMPLES; j++) {
           // samplePos = rayOrigin + viewDirection * tRay
           var samplePosX = rayOriginX + vdX * tRay;
@@ -867,15 +857,6 @@
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
           var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
-
-          // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
-          var sunViewCos = sunDirectionX * vdX + sunDirectionY * vdY + sunDirectionZ * vdZ;
-          if (sunViewCos < -1) sunViewCos = -1;
-          if (sunViewCos > 1) sunViewCos = 1;
-
-          var sunViewAngle = Math.acos(sunViewCos);
-          var phaseR = rayleighPhase(sunViewAngle);
-          var phaseM = miePhase(sunViewAngle);
 
           // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR

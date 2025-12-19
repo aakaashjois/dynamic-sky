@@ -1195,10 +1195,10 @@
                                 </div>
                                 <p class="card-description">Compare sky conditions across different locations and time zones. Great for travel apps showing destination weather.</p>
                                 <div class="location-selector">
-                                    <button class="location-btn active" data-location="new-york">New York</button>
-                                    <button class="location-btn" data-location="tokyo">Tokyo</button>
-                                    <button class="location-btn" data-location="london">London</button>
-                                    <button class="location-btn" data-location="sydney">Sydney</button>
+                                    <button class="location-btn active" data-location="new-york" aria-pressed="true">New York</button>
+                                    <button class="location-btn" data-location="tokyo" aria-pressed="false">Tokyo</button>
+                                    <button class="location-btn" data-location="london" aria-pressed="false">London</button>
+                                    <button class="location-btn" data-location="sydney" aria-pressed="false">Sydney</button>
                                 </div>
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
@@ -1695,7 +1695,9 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = backgroundSky.minutesToDate(minutes);
-                backgroundTimeDisplay.textContent = formatTime(minutes);
+                const timeString = formatTime(minutes);
+                backgroundTimeDisplay.textContent = timeString;
+                backgroundSlider.setAttribute('aria-valuetext', timeString);
                 backgroundSky.updateSky(date);
             }
             
@@ -1753,7 +1755,9 @@
             const now = new Date();
             const currentMinutes = backgroundSky.dateToMinutes(now);
             backgroundSlider.value = currentMinutes;
-            backgroundTimeDisplay.textContent = formatTime(currentMinutes);
+            const initialTimeString = formatTime(currentMinutes);
+            backgroundTimeDisplay.textContent = initialTimeString;
+            backgroundSlider.setAttribute('aria-valuetext', initialTimeString);
             backgroundSky.updateSky(now);
         });
         
@@ -1772,7 +1776,9 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = weatherSky.minutesToDate(minutes);
-                timeDisplay.textContent = formatTime(minutes);
+                const timeString = formatTime(minutes);
+                timeDisplay.textContent = timeString;
+                slider.setAttribute('aria-valuetext', timeString);
                 weatherSky.updateSky(date);
             }
             
@@ -1797,7 +1803,9 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = dashboardSky.minutesToDate(minutes);
-                timeDisplay.textContent = formatTime(minutes);
+                const timeString = formatTime(minutes);
+                timeDisplay.textContent = timeString;
+                slider.setAttribute('aria-valuetext', timeString);
                 dashboardSky.updateSky(date);
             }
             
@@ -1848,8 +1856,10 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = travelSky.minutesToDate(minutes);
-                timeDisplay.textContent = formatTime(minutes);
-                labelDisplay.textContent = `${locations[currentTravelLocation].name} - ${formatTime(minutes)}`;
+                const timeString = formatTime(minutes);
+                timeDisplay.textContent = timeString;
+                slider.setAttribute('aria-valuetext', timeString);
+                labelDisplay.textContent = `${locations[currentTravelLocation].name} - ${timeString}`;
                 travelSky.updateSky(date);
             }
             
@@ -1858,8 +1868,12 @@
             // Location buttons
             document.querySelectorAll('.location-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    document.querySelectorAll('.location-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.location-btn').forEach(b => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
                     btn.classList.add('active');
+                    btn.setAttribute('aria-pressed', 'true');
                     currentTravelLocation = btn.dataset.location;
                     travelSky.setLocation(
                         locations[currentTravelLocation].lat,
@@ -1910,7 +1924,9 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = productSky.minutesToDate(minutes);
-                timeDisplay.textContent = formatTime(minutes);
+                const timeString = formatTime(minutes);
+                timeDisplay.textContent = timeString;
+                slider.setAttribute('aria-valuetext', timeString);
                 productSky.updateSky(date);
             }
             
@@ -1975,7 +1991,9 @@
                 // Handle 1440 as 0 (both represent midnight)
                 if (minutes >= 1440) minutes = 0;
                 const date = comparisonSkies[0].minutesToDate(minutes);
-                timeDisplay.textContent = formatTime(minutes);
+                const timeString = formatTime(minutes);
+                timeDisplay.textContent = timeString;
+                slider.setAttribute('aria-valuetext', timeString);
                 
                 comparisonSkies.forEach(sky => {
                     sky.updateSky(date);
