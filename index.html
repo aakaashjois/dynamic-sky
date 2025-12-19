@@ -511,6 +511,20 @@
             -webkit-appearance: none;
             appearance: none;
         }
+
+        /* Accessibility: Focus indicators */
+        .time-slider:focus-visible,
+        .location-btn:focus-visible,
+        .code-accordion-header:focus-visible,
+        .github-link:focus-visible,
+        .card a:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .time-slider:focus-visible {
+            outline-offset: 4px;
+        }
         
         .time-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
