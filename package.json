@@ -1,6 +1,39 @@
 {
   "name": "dynamic-sky",
   "version": "0.0.0",
+  "description": "A beautiful vanilla JavaScript library for rendering dynamic sky backgrounds with realistic atmospheric scattering, animated starfields, and seamless time control",
   "main": "dynamic-sky.js",
-  "license": "Apache-2.0"
+  "files": [
+    "dynamic-sky.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aakaashjois/dynamic-sky.git"
+  },
+  "author": "Aakaash Jois",
+  "homepage": "https://dynamic-sky.aakaashjois.com",
+  "keywords": [
+    "dynamic-sky",
+    "sky-rendering",
+    "atmospheric-scattering",
+    "starfield",
+    "day-night-cycle",
+    "sky-animation",
+    "background-generator",
+    "physics-based-rendering",
+    "vanilla-javascript",
+    "sky-visualization",
+    "time-control",
+    "location-based",
+    "astronomical",
+    "celestial",
+    "sun-position",
+    "twilight",
+    "sky-gradient",
+    "web-background"
+  ],
+  "jsdelivr": "dynamic-sky.js"
 }
