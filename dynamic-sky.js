@@ -55,7 +55,7 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle) {
+  function computeTransmittance(height, angle, out) {
     var rayOriginX = 0;
     var rayOriginY = GROUND_RADIUS + height;
     var rayOriginZ = 0;
@@ -77,7 +77,13 @@
       else distance = t;
     }
 
-    if (distance === null) return [1, 1, 1];
+    if (distance === null) {
+      if (out) {
+        out[0] = 1; out[1] = 1; out[2] = 1;
+        return out;
+      }
+      return [1, 1, 1];
+    }
 
     var segmentLength = distance / INTEGRATION_SAMPLES;
     var tCurrent = 0.5 * segmentLength;
@@ -117,6 +123,12 @@
     var tauO2 = OZONE_ABSORB[2] * odOzone;
 
     // Return exp(-(tauR + tauM + tauO))
+    if (out) {
+      out[0] = Math.exp(-(tauR0 + tauM + tauO0));
+      out[1] = Math.exp(-(tauR1 + tauM + tauO1));
+      out[2] = Math.exp(-(tauR2 + tauM + tauO2));
+      return out;
+    }
     return [
       Math.exp(-(tauR0 + tauM + tauO0)),
       Math.exp(-(tauR1 + tauM + tauO1)),
@@ -272,6 +284,10 @@
   // Utility functions
   function clamp(x, min, max) {
     return Math.max(min, Math.min(max, x));
+  }
+
+  function clamp01(x) {
+    return x < 0 ? 0 : (x > 1 ? 1 : x);
   }
 
   // Note: add, scale, exp, dot, len, norm, intersectSphere removed as they are now inlined or unused.
@@ -736,10 +752,10 @@
 
     var stops = [];
 
-    // Helper to clamp values in stops
-    function clampVal(x) {
-      return x < 0 ? 0 : (x > 1 ? 1 : x);
-    }
+    // Pre-allocate arrays to reduce garbage collection
+    var transmittanceCameraToSpace = [0, 0, 0];
+    var transmittanceToSpace = [0, 0, 0];
+    var transmittanceLight = [0, 0, 0];
 
     for (var i = 0; i < GRADIENT_SAMPLES; i++) {
       var s = i / (GRADIENT_SAMPLES - 1);
@@ -795,9 +811,10 @@
         if (startRayCos > 1) startRayCos = 1;
 
         var startRayAngle = Math.acos(Math.abs(startRayCos));
-        var transmittanceCameraToSpace = computeTransmittance(
+        computeTransmittance(
           startHeight,
-          startRayAngle
+          startRayAngle,
+          transmittanceCameraToSpace
         );
 
         // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
@@ -835,9 +852,10 @@
           var viewAngle = Math.acos(Math.abs(viewCos));
           var sunAngle = Math.acos(sunCos);
 
-          var transmittanceToSpace = computeTransmittance(
+          computeTransmittance(
             sampleHeight,
-            viewAngle
+            viewAngle,
+            transmittanceToSpace
           );
 
           var transmittanceCameraToSample0, transmittanceCameraToSample1, transmittanceCameraToSample2;
@@ -852,7 +870,7 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          var transmittanceLight = computeTransmittance(sampleHeight, sunAngle);
+          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
           var opticalDensityRay = Math.exp(
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
@@ -925,9 +943,9 @@
       c1 = Math.pow(c1, invGamma);
       c2 = Math.pow(c2, invGamma);
 
-      var r = Math.round(clampVal(c0) * 255);
-      var g = Math.round(clampVal(c1) * 255);
-      var b = Math.round(clampVal(c2) * 255);
+      var r = Math.round(clamp01(c0) * 255);
+      var g = Math.round(clamp01(c1) * 255);
+      var b = Math.round(clamp01(c2) * 255);
 
       var percent = (1 - s) * 100;
       stops.push({ percent: percent, rgb: [r, g, b] });
