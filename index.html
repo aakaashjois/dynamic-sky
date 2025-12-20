@@ -49,6 +49,15 @@
             -moz-osx-font-smoothing: grayscale;
 
         }
+
+        /* Accessibility: Focus styles */
+        .time-slider:focus-visible,
+        .location-btn:focus-visible,
+        .code-accordion-header:focus-visible,
+        .github-link:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
         
         /* Hero Section */
         .hero {
