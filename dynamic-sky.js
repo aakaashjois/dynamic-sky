@@ -55,17 +55,25 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle) {
-    var rayOriginX = 0;
+  // Optimized: Removed Z calculations (2D symmetry) and uses output buffer
+  function computeTransmittance(height, angle, result) {
+    // Ray origin: (0, GROUND_RADIUS + height, 0)
+    // Ray direction: (sin(angle), cos(angle), 0)
+    // We can simulate this in 2D (XY plane) because the atmosphere is spherically symmetric.
+    // Z components are all 0.
+
     var rayOriginY = GROUND_RADIUS + height;
-    var rayOriginZ = 0;
+    // rayOriginX = 0
 
     var rayDirectionX = Math.sin(angle);
     var rayDirectionY = Math.cos(angle);
-    var rayDirectionZ = 0;
 
-    var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
-    var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
+    // dot(rayOrigin, rayDirection)
+    // rayOriginX * rayDirectionX = 0 * ... = 0
+    var b = rayOriginY * rayDirectionY;
+
+    // dot(rayOrigin, rayOrigin) - TOP_RADIUS^2
+    var c = (rayOriginY * rayOriginY) - (TOP_RADIUS * TOP_RADIUS);
     var discr = b * b - c;
 
     var distance;
@@ -77,7 +85,13 @@
       else distance = t;
     }
 
-    if (distance === null) return [1, 1, 1];
+    if (distance === null) {
+      if (result) {
+        result[0] = 1; result[1] = 1; result[2] = 1;
+        return result;
+      }
+      return [1, 1, 1];
+    }
 
     var segmentLength = distance / INTEGRATION_SAMPLES;
     var tCurrent = 0.5 * segmentLength;
@@ -88,11 +102,11 @@
 
     for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
       // pos = rayOrigin + rayDirection * tCurrent
-      var posX = rayOriginX + rayDirectionX * tCurrent;
+      var posX = rayDirectionX * tCurrent; // rayOriginX is 0
       var posY = rayOriginY + rayDirectionY * tCurrent;
-      var posZ = rayOriginZ + rayDirectionZ * tCurrent;
 
-      var lenPos = Math.hypot(posX, posY, posZ);
+      // Use sqrt instead of hypot for 2D distance
+      var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
       var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
@@ -117,6 +131,13 @@
     var tauO2 = OZONE_ABSORB[2] * odOzone;
 
     // Return exp(-(tauR + tauM + tauO))
+    if (result) {
+      result[0] = Math.exp(-(tauR0 + tauM + tauO0));
+      result[1] = Math.exp(-(tauR1 + tauM + tauO1));
+      result[2] = Math.exp(-(tauR2 + tauM + tauO2));
+      return result;
+    }
+
     return [
       Math.exp(-(tauR0 + tauM + tauO0)),
       Math.exp(-(tauR1 + tauM + tauO1)),
@@ -272,6 +293,10 @@
   // Utility functions
   function clamp(x, min, max) {
     return Math.max(min, Math.min(max, x));
+  }
+
+  function clampVal(x) {
+    return x < 0 ? 0 : (x > 1 ? 1 : x);
   }
 
   // Note: add, scale, exp, dot, len, norm, intersectSphere removed as they are now inlined or unused.
@@ -736,10 +761,10 @@
 
     var stops = [];
 
-    // Helper to clamp values in stops
-    function clampVal(x) {
-      return x < 0 ? 0 : (x > 1 ? 1 : x);
-    }
+    // Reuse buffers for transmittance to avoid array allocation in hot loop
+    var tCam = [0, 0, 0];
+    var tSpace = [0, 0, 0];
+    var tLight = [0, 0, 0];
 
     for (var i = 0; i < GRADIENT_SAMPLES; i++) {
       var s = i / (GRADIENT_SAMPLES - 1);
@@ -797,7 +822,8 @@
         var startRayAngle = Math.acos(Math.abs(startRayCos));
         var transmittanceCameraToSpace = computeTransmittance(
           startHeight,
-          startRayAngle
+          startRayAngle,
+          tCam
         );
 
         // sunViewCos = clamp(dot(sunDirection, viewDirection), -1, 1)
@@ -837,7 +863,8 @@
 
           var transmittanceToSpace = computeTransmittance(
             sampleHeight,
-            viewAngle
+            viewAngle,
+            tSpace
           );
 
           var transmittanceCameraToSample0, transmittanceCameraToSample1, transmittanceCameraToSample2;
@@ -852,7 +879,7 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          var transmittanceLight = computeTransmittance(sampleHeight, sunAngle);
+          var transmittanceLight = computeTransmittance(sampleHeight, sunAngle, tLight);
           var opticalDensityRay = Math.exp(
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
