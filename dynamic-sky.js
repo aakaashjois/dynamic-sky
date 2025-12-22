@@ -96,9 +96,10 @@
       // pos = rayOrigin + rayDirection * tCurrent
       var posX = rayOriginX + rayDirectionX * tCurrent;
       var posY = rayOriginY + rayDirectionY * tCurrent;
-      var posZ = rayOriginZ + rayDirectionZ * tCurrent;
+      // posZ is always 0 because rayOriginZ and rayDirectionZ are 0
 
-      var lenPos = Math.hypot(posX, posY, posZ);
+      // Manual sqrt is faster than Math.hypot
+      var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
       var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
@@ -764,7 +765,8 @@
       var vdX = 0;
       var vdY = s;
       var vdZ = focalZ;
-      var vdLen = Math.hypot(vdX, vdY, vdZ) || 1;
+      // Manual sqrt is faster than Math.hypot
+      var vdLen = Math.sqrt(vdY * vdY + vdZ * vdZ) || 1;
       vdX /= vdLen;
       vdY /= vdLen;
       vdZ /= vdLen;
@@ -831,7 +833,8 @@
           var samplePosY = rayOriginY + vdY * tRay;
           var samplePosZ = rayOriginZ + vdZ * tRay;
 
-          var sampleRadius = Math.hypot(samplePosX, samplePosY, samplePosZ);
+          // Manual sqrt is faster than Math.hypot
+          var sampleRadius = Math.sqrt(samplePosX * samplePosX + samplePosY * samplePosY + samplePosZ * samplePosZ);
 
           var upUnitX = samplePosX / sampleRadius;
           var upUnitY = samplePosY / sampleRadius;
