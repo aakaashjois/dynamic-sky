@@ -291,6 +291,15 @@
     return x < 0 ? 0 : (x > 1 ? 1 : x);
   }
 
+  // Security: Validate coordinates to prevent invalid data or potential injection
+  function isValidCoordinate(lat, lng) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+    if (isNaN(lat) || isNaN(lng)) return false;
+    if (lat < -90 || lat > 90) return false;
+    if (lng < -180 || lng > 180) return false;
+    return true;
+  }
+
   // Note: add, scale, exp, dot, len, norm, intersectSphere removed as they are now inlined or unused.
 
   /**
@@ -479,6 +488,12 @@
         if (!data.success) {
           throw new Error('API response indicates failure');
         }
+
+        // Validate API response data (Defense in Depth)
+        if (!isValidCoordinate(data.latitude, data.longitude)) {
+          throw new Error('Invalid coordinates received from location API');
+        }
+
         self.userLatitude = data.latitude;
         self.userLongitude = data.longitude;
         
@@ -981,7 +996,7 @@
    * @param {Date} date - The date/time to render the sky for. If not provided, uses current time.
    */
   DynamicSky.prototype.updateSky = function(date) {
-    if (!this.userLatitude || !this.userLongitude) {
+    if (this.userLatitude == null || this.userLongitude == null) {
       console.warn('DynamicSky: Location not set. Call init() first or provide latitude/longitude.');
       return;
     }
@@ -1072,6 +1087,10 @@
    * @param {number} longitude - Longitude coordinate
    */
   DynamicSky.prototype.setLocation = function(latitude, longitude) {
+    if (!isValidCoordinate(latitude, longitude)) {
+      console.error('DynamicSky: Invalid coordinates provided to setLocation');
+      return;
+    }
     this.userLatitude = latitude;
     this.userLongitude = longitude;
     this.updateSky();
