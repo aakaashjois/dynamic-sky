@@ -96,7 +96,7 @@
       // pos = rayOrigin + rayDirection * tCurrent
       var posX = rayOriginX + rayDirectionX * tCurrent;
       var posY = rayOriginY + rayDirectionY * tCurrent;
-      // posZ is always 0 because rayOriginZ and rayDirectionZ are 0
+      // Simplified calculation: posZ term omitted since rayOriginZ and rayDirectionZ are both 0
 
       // Manual sqrt is faster than Math.hypot
       var lenPos = Math.sqrt(posX * posX + posY * posY);
