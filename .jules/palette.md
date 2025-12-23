@@ -13,3 +13,7 @@
 ## 2025-12-17 - High Contrast Accents
 **Learning:** Using white as an accent color on dark backgrounds improves visibility for UI controls but requires careful contrast management for text inside those controls (buttons, badges).
 **Action:** When setting a light accent color, ensure text on active/hover states is inverted (dark) to maintain WCAG contrast ratios. Links may need explicit underlining if color differentiation is lost.
+
+## 2025-12-23 - Respecting Reduced Motion
+**Learning:** Disabling animations for `prefers-reduced-motion` requires more than just stopping the animation; elements that fade in must have their opacity explicitly set to 1, otherwise they remain invisible.
+**Action:** When implementing reduced motion media queries, explicitly set final state properties (e.g., `opacity: 1`, `transform: none`) with `!important` to ensure content is visible and accessible.
