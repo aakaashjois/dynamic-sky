@@ -751,14 +751,18 @@
 
     var focalZ = 1.0 / Math.tan((FOV_DEG * 0.5 * PI) / 180.0);
 
-    var stops = [];
-
     // Pre-allocate arrays to reduce garbage collection
     var transmittanceCameraToSpace = [0, 0, 0];
     var transmittanceToSpace = [0, 0, 0];
     var transmittanceLight = [0, 0, 0];
 
-    for (var i = 0; i < GRADIENT_SAMPLES; i++) {
+    // Optimization: Build CSS string directly to avoid object allocation and sorting
+    // Iterate in reverse so percent goes from 0 to 100
+    var colorStops = "";
+    var startRgb = null;
+    var endRgb = null;
+
+    for (var i = GRADIENT_SAMPLES - 1; i >= 0; i--) {
       var s = i / (GRADIENT_SAMPLES - 1);
 
       // viewDirection = norm([0, s, focalZ])
@@ -951,20 +955,22 @@
       var b = Math.round(clamp01(c2) * 255);
 
       var percent = (1 - s) * 100;
-      stops.push({ percent: percent, rgb: [r, g, b] });
+
+      // Capture start/end RGB for return values
+      if (i === GRADIENT_SAMPLES - 1) {
+        startRgb = [r, g, b];
+      } else if (i === 0) {
+        endRgb = [r, g, b];
+      }
+
+      if (colorStops) colorStops += ", ";
+      colorStops += "rgb(" + r + ", " + g + ", " + b + ") " + (Math.round(percent * 100) / 100) + "%";
     }
 
-    stops.sort(function(a, b) { return a.percent - b.percent; });
-    var colorStops = stops
-      .map(function(stop) {
-        return "rgb(" + stop.rgb[0] + ", " + stop.rgb[1] + ", " + stop.rgb[2] + ") " +
-               (Math.round(stop.percent * 100) / 100) + "%";
-      })
-      .join(", ");
     return [
       "linear-gradient(to bottom, " + colorStops + ")",
-      stops[0].rgb,
-      stops[stops.length - 1].rgb,
+      startRgb,
+      endRgb,
     ];
   };
 
