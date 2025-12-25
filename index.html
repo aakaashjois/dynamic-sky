@@ -519,6 +519,7 @@
         .location-btn:focus-visible,
         .code-accordion-header:focus-visible,
         .github-link:focus-visible,
+        .scroll-indicator:focus-visible,
         .card a:focus-visible {
             outline: 2px solid var(--accent);
             outline-offset: 2px;
@@ -890,6 +891,8 @@
             font-size: 1rem;
             font-weight: 600;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.5);
+            text-decoration: none;
+            cursor: pointer;
             }
             
         .scroll-indicator::after {
@@ -923,12 +926,12 @@
         <div class="container">
             <h1>Dynamic Sky</h1>
             <p>Transform your web experience with breathtaking, real-time sky renders that evolve throughout the day. From golden sunrises to star-studded nights—bring the atmosphere to life.</p>
-            <div class="scroll-indicator">Scroll to explore</div>
+            <a href="#features" class="scroll-indicator" aria-label="Scroll to features section">Scroll to explore</a>
         </div>
     </section>
 
     <!-- Features Overview -->
-    <section class="section">
+    <section class="section" id="features">
         <div class="container">
             <div class="section-header">
                 <h2>Key Features</h2>
@@ -2036,7 +2039,8 @@
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    target.scrollIntoView({ behavior: 'smooth' });
+                    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    target.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
                 }
             });
         });
