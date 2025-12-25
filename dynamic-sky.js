@@ -664,6 +664,9 @@
       var w = self.skyState.starFieldWidth || diameter;
       var h = self.skyState.starFieldHeight || diameter;
 
+      // Optimization: Use DocumentFragment to batch DOM insertions
+      var fragment = document.createDocumentFragment();
+
       for (var i = 0; i < starsCount; i++) {
         var star = document.createElement("DIV");
         var xVal = Math.random() * w;
@@ -681,8 +684,10 @@
           star.style.backgroundColor = red;
         }
 
-        layer.appendChild(star);
+        fragment.appendChild(star);
       }
+
+      layer.appendChild(fragment);
     }
 
     for (var i = 0; i < layerNodes.length; i++) {
