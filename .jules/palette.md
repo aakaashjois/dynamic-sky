@@ -13,3 +13,7 @@
 ## 2025-12-17 - High Contrast Accents
 **Learning:** Using white as an accent color on dark backgrounds improves visibility for UI controls but requires careful contrast management for text inside those controls (buttons, badges).
 **Action:** When setting a light accent color, ensure text on active/hover states is inverted (dark) to maintain WCAG contrast ratios. Links may need explicit underlining if color differentiation is lost.
+
+## 2025-12-26 - Interactive Indicators
+**Learning:** Purely visual scroll indicators (like text/arrows) frustrate users who expect them to be clickable.
+**Action:** Implement scroll indicators as anchor links (`<a href="#target">`) to improve both usability and keyboard accessibility. Ensure they have appropriate focus states and semantic labels.
