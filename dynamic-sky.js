@@ -479,6 +479,17 @@
         if (!data.success) {
           throw new Error('API response indicates failure');
         }
+
+        // Validate untrusted data from API
+        if (typeof data.latitude !== 'number' || !isFinite(data.latitude) ||
+            typeof data.longitude !== 'number' || !isFinite(data.longitude)) {
+          throw new Error('Invalid coordinates received from API');
+        }
+        if (data.latitude < -90 || data.latitude > 90 ||
+            data.longitude < -180 || data.longitude > 180) {
+          throw new Error('Coordinates from API out of range');
+        }
+
         self.userLatitude = data.latitude;
         self.userLongitude = data.longitude;
         
@@ -1072,6 +1083,19 @@
    * @param {number} longitude - Longitude coordinate
    */
   DynamicSky.prototype.setLocation = function(latitude, longitude) {
+    // Validate inputs
+    if (typeof latitude !== 'number' || !isFinite(latitude) ||
+        typeof longitude !== 'number' || !isFinite(longitude)) {
+      console.error('DynamicSky: Invalid coordinates provided. Must be numeric.');
+      return;
+    }
+
+    // Validate ranges
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      console.error('DynamicSky: Coordinates out of range. Latitude: -90 to 90, Longitude: -180 to 180.');
+      return;
+    }
+
     this.userLatitude = latitude;
     this.userLongitude = longitude;
     this.updateSky();
