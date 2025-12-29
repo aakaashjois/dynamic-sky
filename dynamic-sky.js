@@ -316,12 +316,12 @@
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      starLayers: Math.max(1, Math.min(10, parseInt(options.starLayers) || 3)),
+      starDensity: Math.max(1, Math.min(50, parseInt(options.starDensity) || 5)),
       
       // Callbacks
-      onUpdate: options.onUpdate || null,
-      onLocationDetected: options.onLocationDetected || null,
+      onUpdate: typeof options.onUpdate === 'function' ? options.onUpdate : null,
+      onLocationDetected: typeof options.onLocationDetected === 'function' ? options.onLocationDetected : null,
       
       // Location API
       locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
