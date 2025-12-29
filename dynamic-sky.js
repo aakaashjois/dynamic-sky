@@ -42,26 +42,43 @@
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
 
+  // Optimization: Precompute inverses to use multiplication instead of division
+  var INV_RAYLEIGH_SCALE_HEIGHT = 1.0 / RAYLEIGH_SCALE_HEIGHT;
+  var INV_MIE_SCALE_HEIGHT = 1.0 / MIE_SCALE_HEIGHT;
+  var INV_OZONE_WIDTH = 1.0 / 15e3;
+
   function rayleighPhase(cosAngle) {
     return (3 * (1 + cosAngle * cosAngle)) / (16 * PI);
   }
 
+  // Optimization: Precompute Mie phase constants
+  var MIE_G = 0.8;
+  var MIE_G2 = MIE_G * MIE_G;
+  var MIE_SCALE = 3 / (8 * PI);
+  var MIE_NUM_FACTOR = (1 - MIE_G2);
+  var MIE_DENOM_FACTOR = (2 + MIE_G2);
+  var MIE_TERM_FACTOR = (1 + MIE_G2);
+  var MIE_2G = 2 * MIE_G;
+
   function miePhase(cosAngle) {
-    var g = 0.8;
-    var scale = 3 / (8 * PI);
-    var num = (1 - Math.pow(g, 2)) * (1 + cosAngle * cosAngle);
-    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * cosAngle, 3 / 2);
-    return (scale * num) / denom;
+    var num = MIE_NUM_FACTOR * (1 + cosAngle * cosAngle);
+    var val = MIE_TERM_FACTOR - MIE_2G * cosAngle;
+    // Optimization: Use x * sqrt(x) instead of pow(x, 1.5)
+    var denom = MIE_DENOM_FACTOR * val * Math.sqrt(val);
+    return (MIE_SCALE * num) / denom;
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle, out) {
+  // Optimization: Accept cosAngle to avoid costly acos/sin/cos roundtrip
+  function computeTransmittance(height, cosAngle, out) {
     var rayOriginX = 0;
     var rayOriginY = GROUND_RADIUS + height;
     var rayOriginZ = 0;
 
-    var rayDirectionX = Math.sin(angle);
-    var rayDirectionY = Math.cos(angle);
+    // We assume the angle came from acos(abs(cos)), so it's in [0, PI/2].
+    // Thus sin(angle) is always positive.
+    var rayDirectionY = cosAngle;
+    var rayDirectionX = Math.sqrt(1.0 - cosAngle * cosAngle);
     var rayDirectionZ = 0;
 
     var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
@@ -102,11 +119,11 @@
       var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
-      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
+      var dR = Math.exp(-h * INV_RAYLEIGH_SCALE_HEIGHT);
+      var dM = Math.exp(-h * INV_MIE_SCALE_HEIGHT);
       odRayleigh += dR * segmentLength;
 
-      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
+      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) * INV_OZONE_WIDTH, 1.0);
       odOzone += ozoneDensity * segmentLength;
       odMie += dM * segmentLength;
 
@@ -830,10 +847,10 @@
         if (startRayCos < -1) startRayCos = -1;
         if (startRayCos > 1) startRayCos = 1;
 
-        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        // Optimization: Pass cosine directly to avoid acos()
         computeTransmittance(
           startHeight,
-          startRayAngle,
+          Math.abs(startRayCos),
           transmittanceCameraToSpace
         );
 
@@ -870,12 +887,10 @@
           if (sunCos < -1) sunCos = -1;
           if (sunCos > 1) sunCos = 1;
 
-          var viewAngle = Math.acos(Math.abs(viewCos));
-          var sunAngle = Math.acos(sunCos);
-
+          // Optimization: Pass cosine directly to avoid acos()
           computeTransmittance(
             sampleHeight,
-            viewAngle,
+            Math.abs(viewCos),
             transmittanceToSpace
           );
 
@@ -891,11 +906,11 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
+          computeTransmittance(sampleHeight, sunCos, transmittanceLight);
           var opticalDensityRay = Math.exp(
-            -sampleHeight / RAYLEIGH_SCALE_HEIGHT
+            -sampleHeight * INV_RAYLEIGH_SCALE_HEIGHT
           );
-          var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
+          var opticalDensityMie = Math.exp(-sampleHeight * INV_MIE_SCALE_HEIGHT);
 
           // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
