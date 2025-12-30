@@ -32,6 +32,8 @@
   var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
   var RAYLEIGH_SCALE_HEIGHT = 8e3;
   var MIE_SCALE_HEIGHT = 1.2e3;
+  var RAYLEIGH_SCALE_HEIGHT_INV = 1.0 / RAYLEIGH_SCALE_HEIGHT;
+  var MIE_SCALE_HEIGHT_INV = 1.0 / MIE_SCALE_HEIGHT;
   var GROUND_RADIUS = 6360000;
   var TOP_RADIUS = 6460000;
   var SUN_INTENSITY = 1.0;
@@ -55,13 +57,18 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle, out) {
+  // Optimized to take cos(angle) directly to avoid costly acos/cos/sin calls
+  function computeTransmittance(height, cosAngle, out) {
     var rayOriginX = 0;
     var rayOriginY = GROUND_RADIUS + height;
     var rayOriginZ = 0;
 
-    var rayDirectionX = Math.sin(angle);
-    var rayDirectionY = Math.cos(angle);
+    // sin^2 + cos^2 = 1 => sin = sqrt(1 - cos^2)
+    // Math.acos returns 0..PI, so sin is always >= 0
+    var sinAngle = Math.sqrt(Math.max(0, 1.0 - cosAngle * cosAngle));
+
+    var rayDirectionX = sinAngle;
+    var rayDirectionY = cosAngle;
     var rayDirectionZ = 0;
 
     var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
@@ -102,11 +109,11 @@
       var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
-      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
+      var dR = Math.exp(-h * RAYLEIGH_SCALE_HEIGHT_INV);
+      var dM = Math.exp(-h * MIE_SCALE_HEIGHT_INV);
       odRayleigh += dR * segmentLength;
 
-      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
+      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) * (1.0 / 15e3), 1.0);
       odOzone += ozoneDensity * segmentLength;
       odMie += dM * segmentLength;
 
@@ -830,10 +837,10 @@
         if (startRayCos < -1) startRayCos = -1;
         if (startRayCos > 1) startRayCos = 1;
 
-        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        // Optimization: Pass cos directly to avoid acos+cos/sin overhead
         computeTransmittance(
           startHeight,
-          startRayAngle,
+          Math.abs(startRayCos),
           transmittanceCameraToSpace
         );
 
@@ -870,12 +877,13 @@
           if (sunCos < -1) sunCos = -1;
           if (sunCos > 1) sunCos = 1;
 
-          var viewAngle = Math.acos(Math.abs(viewCos));
-          var sunAngle = Math.acos(sunCos);
+          // Optimization: Pass cos directly to avoid acos+cos/sin overhead
+          // var viewAngle = Math.acos(Math.abs(viewCos));
+          // var sunAngle = Math.acos(sunCos);
 
           computeTransmittance(
             sampleHeight,
-            viewAngle,
+            Math.abs(viewCos),
             transmittanceToSpace
           );
 
@@ -891,11 +899,11 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
+          computeTransmittance(sampleHeight, sunCos, transmittanceLight);
           var opticalDensityRay = Math.exp(
-            -sampleHeight / RAYLEIGH_SCALE_HEIGHT
+            -sampleHeight * RAYLEIGH_SCALE_HEIGHT_INV
           );
-          var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
+          var opticalDensityMie = Math.exp(-sampleHeight * MIE_SCALE_HEIGHT_INV);
 
           // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
