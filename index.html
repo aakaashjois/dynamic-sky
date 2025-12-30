@@ -555,6 +555,28 @@
             border: none;
             box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
         }
+
+        /* Accessibility: Skip Link */
+        .skip-link {
+            position: absolute;
+            top: -100px;
+            left: 1rem;
+            background: var(--accent);
+            color: black;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            text-decoration: none;
+            z-index: 9999;
+            transition: top 0.2s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .skip-link:focus {
+            top: 1rem;
+            outline: 2px solid white;
+            outline-offset: 2px;
+        }
         
         .time-display {
             text-align: center;
@@ -943,6 +965,9 @@
     </style>
 </head>
 <body>
+    <!-- Accessibility: Skip Link -->
+    <a href="#features" class="skip-link">Skip to main content</a>
+
     <!-- Background Sky (Full Page) -->
     <div id="background-sky"></div>
     <div id="stars-container"></div>
