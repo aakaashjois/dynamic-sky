@@ -316,8 +316,9 @@
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      // Security: Clamp values to prevent Client-Side DoS via excessive DOM creation
+      starLayers: Math.max(0, Math.min(10, options.starLayers || 3)),
+      starDensity: Math.max(0, Math.min(50, options.starDensity || 5)),
       
       // Callbacks
       onUpdate: options.onUpdate || null,
