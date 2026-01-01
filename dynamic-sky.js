@@ -304,11 +304,27 @@
   function DynamicSky(options) {
     options = options || {};
     
+    // Security: Input validation and sanitization
+    var skyContainer = typeof options.skyContainer === 'string' ? options.skyContainer : '#background-sky';
+    var starsContainer = typeof options.starsContainer === 'string' ? options.starsContainer : '#stars-container';
+
+    // Security: Prevent DoS by capping potentially expensive operations
+    var starLayers = typeof options.starLayers === 'number' ? Math.max(1, Math.min(10, options.starLayers)) : 3;
+    var starDensity = typeof options.starDensity === 'number' ? Math.max(1, Math.min(50, options.starDensity)) : 5;
+
+    // Security: Validate URL protocol to prevent SSRF/XSS risks via config
+    var locationApiUrl = 'https://ipwho.is/';
+    if (typeof options.locationApiUrl === 'string') {
+      if (/^https?:\/\//i.test(options.locationApiUrl)) {
+        locationApiUrl = options.locationApiUrl;
+      }
+    }
+
     // Default configuration
     this.config = {
       // DOM selectors
-      skyContainer: options.skyContainer || '#background-sky',
-      starsContainer: options.starsContainer || '#stars-container',
+      skyContainer: skyContainer,
+      starsContainer: starsContainer,
       
       // Location
       latitude: options.latitude || null,
@@ -316,15 +332,15 @@
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      starLayers: starLayers,
+      starDensity: starDensity,
       
       // Callbacks
-      onUpdate: options.onUpdate || null,
-      onLocationDetected: options.onLocationDetected || null,
+      onUpdate: typeof options.onUpdate === 'function' ? options.onUpdate : null,
+      onLocationDetected: typeof options.onLocationDetected === 'function' ? options.onLocationDetected : null,
       
       // Location API
-      locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
+      locationApiUrl: locationApiUrl
     };
 
     // Internal state
