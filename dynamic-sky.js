@@ -55,13 +55,14 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle, out) {
+  // Optimization: Accepts cosAngle directly to avoid Math.acos/sin/cos in hot loops
+  function computeTransmittance(height, cosAngle, out) {
     var rayOriginX = 0;
     var rayOriginY = GROUND_RADIUS + height;
     var rayOriginZ = 0;
 
-    var rayDirectionX = Math.sin(angle);
-    var rayDirectionY = Math.cos(angle);
+    var rayDirectionY = cosAngle;
+    var rayDirectionX = Math.sqrt(Math.max(0, 1 - cosAngle * cosAngle));
     var rayDirectionZ = 0;
 
     var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
@@ -830,10 +831,10 @@
         if (startRayCos < -1) startRayCos = -1;
         if (startRayCos > 1) startRayCos = 1;
 
-        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        // Optimization: Pass cosine directly
         computeTransmittance(
           startHeight,
-          startRayAngle,
+          Math.abs(startRayCos),
           transmittanceCameraToSpace
         );
 
@@ -870,12 +871,10 @@
           if (sunCos < -1) sunCos = -1;
           if (sunCos > 1) sunCos = 1;
 
-          var viewAngle = Math.acos(Math.abs(viewCos));
-          var sunAngle = Math.acos(sunCos);
-
+          // Optimization: Pass cosine directly to avoid expensive acos/sin/cos
           computeTransmittance(
             sampleHeight,
-            viewAngle,
+            Math.abs(viewCos),
             transmittanceToSpace
           );
 
@@ -891,7 +890,7 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
+          computeTransmittance(sampleHeight, sunCos, transmittanceLight);
           var opticalDensityRay = Math.exp(
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
