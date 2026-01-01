@@ -940,6 +940,49 @@
                 transform: translateX(-50%);
             }
         }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            background: var(--accent);
+            color: black;
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        .back-to-top:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+        }
     </style>
 </head>
 <body>
@@ -2103,11 +2146,55 @@
                 }
             });
         });
+
+        // Back to Top Button Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const backToTopBtn = document.getElementById('back-to-top');
+
+            const toggleButton = () => {
+                const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+                if (scrollY > 500) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            };
+
+            window.addEventListener('scroll', toggleButton);
+            document.body.addEventListener('scroll', toggleButton);
+
+            backToTopBtn.addEventListener('click', () => {
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const scrollOptions = {
+                    top: 0,
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                };
+
+                window.scrollTo(scrollOptions);
+                try {
+                    document.documentElement.scrollTo(scrollOptions);
+                    document.body.scrollTo(scrollOptions);
+                } catch (e) {
+                    // Fallback for older browsers
+                    document.documentElement.scrollTop = 0;
+                    document.body.scrollTop = 0;
+                }
+
+                // Move focus to body/top for accessibility
+                document.body.setAttribute('tabindex', '-1');
+                document.body.focus();
+            });
+        });
     </script>
     <footer style="text-align: center; padding: 2rem; position: relative; z-index: 1;">
         <div class="copyright-card">
             <p style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">© 2025 Aakaash Jois</p>
         </div>
     </footer>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <span aria-hidden="true">↑</span>
+    </button>
 </body>
 </html>

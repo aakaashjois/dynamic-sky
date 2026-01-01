@@ -1,7 +1,7 @@
-## 2025-02-18 - Interactive Scroll Indicator
-**Learning:** Purely visual "scroll arrows" are a missed accessibility opportunity. Converting them to anchor links with smooth scroll not only helps mouse users but provides a critical navigation shortcut for keyboard users.
-**Action:** When adding scroll indicators, always implement them as `<a>` tags with `href="#target"` and ensure JavaScript handles focus management (`target.focus()`) after scrolling.
+## 2024-05-23 - Robust Scroll Handling
+**Learning:** Checking only `window.scrollY` is unreliable when `html` and `body` have `height: 100%` and `overflow-x: hidden` in certain browser contexts (or print emulation). The scroll container may shift to `document.body` or `document.documentElement`.
+**Action:** Always check `window.scrollY || document.documentElement.scrollTop || document.body.scrollTop` and listen to scroll events on both `window` and `document.body`.
 
-## 2025-02-18 - Respecting Reduced Motion
-**Learning:** Users with motion sensitivities rely on `prefers-reduced-motion` settings. JavaScript-driven animations (like smooth scroll) often bypass CSS media queries.
-**Action:** Always check `window.matchMedia('(prefers-reduced-motion: reduce)')` before triggering programmatic animations or smooth scrolling behaviors.
+## 2024-05-23 - Script Placement Hazards
+**Learning:** Defining `const element = document.getElementById(...)` in a script block placed *before* the element itself (e.g., script in body before footer, element after footer) causes immediate null errors.
+**Action:** Always wrap such logic in `document.addEventListener('DOMContentLoaded', ...)` even if the script is at the "end" of the body, unless you are absolutely certain no elements are defined after it.
