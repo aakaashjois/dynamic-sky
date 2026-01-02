@@ -55,17 +55,12 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle, out) {
-    var rayOriginX = 0;
-    var rayOriginY = GROUND_RADIUS + height;
-    var rayOriginZ = 0;
+  // Optimization: Accepts cosAngle directly to avoid expensive acos/sin/cos calls
+  function computeTransmittance(height, cosAngle, out) {
+    var r = GROUND_RADIUS + height;
 
-    var rayDirectionX = Math.sin(angle);
-    var rayDirectionY = Math.cos(angle);
-    var rayDirectionZ = 0;
-
-    var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
-    var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
+    var b = r * cosAngle;
+    var c = r * r - TOP_RADIUS * TOP_RADIUS;
     var discr = b * b - c;
 
     var distance;
@@ -93,13 +88,8 @@
     var odOzone = 0;
 
     for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
-      // pos = rayOrigin + rayDirection * tCurrent
-      var posX = rayOriginX + rayDirectionX * tCurrent;
-      var posY = rayOriginY + rayDirectionY * tCurrent;
-      // Simplified calculation: posZ term omitted since rayOriginZ and rayDirectionZ are both 0
-
-      // Manual sqrt is faster than Math.hypot
-      var lenPos = Math.sqrt(posX * posX + posY * posY);
+      // Optimization: Direct length calculation avoids intermediate x/y coords and sin/cos
+      var lenPos = Math.sqrt(r * r + tCurrent * tCurrent + 2 * r * cosAngle * tCurrent);
       var h = lenPos - GROUND_RADIUS;
 
       var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
@@ -830,10 +820,10 @@
         if (startRayCos < -1) startRayCos = -1;
         if (startRayCos > 1) startRayCos = 1;
 
-        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        // Optimization: Pass cosine directly to avoid acos
         computeTransmittance(
           startHeight,
-          startRayAngle,
+          Math.abs(startRayCos),
           transmittanceCameraToSpace
         );
 
@@ -870,12 +860,9 @@
           if (sunCos < -1) sunCos = -1;
           if (sunCos > 1) sunCos = 1;
 
-          var viewAngle = Math.acos(Math.abs(viewCos));
-          var sunAngle = Math.acos(sunCos);
-
           computeTransmittance(
             sampleHeight,
-            viewAngle,
+            Math.abs(viewCos),
             transmittanceToSpace
           );
 
@@ -891,7 +878,7 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
+          computeTransmittance(sampleHeight, sunCos, transmittanceLight);
           var opticalDensityRay = Math.exp(
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
