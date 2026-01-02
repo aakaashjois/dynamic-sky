@@ -556,6 +556,17 @@
             box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
         }
         
+        /* Accessibility: Disabled state for interactive elements */
+        button:disabled,
+        input:disabled,
+        .location-btn[disabled],
+        .time-slider[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
         .time-display {
             text-align: center;
             font-size: 1.5rem;
@@ -1079,7 +1090,7 @@
                                             <label for="background-slider">Background Sky Time</label>
                                             <span id="background-time">12:00 AM</span>
                                         </div>
-                                        <input type="range" class="time-slider" id="background-slider" min="0" max="1440" step="1" value="0">
+                                        <input type="range" class="time-slider" id="background-slider" min="0" max="1440" step="1" value="0" disabled>
                                         <div class="slider-ends">
                                             <span>12:00 AM</span>
                                             <span>12:00 AM</span>
@@ -1132,7 +1143,7 @@
                                             <label for="weather-slider">Time of Day</label>
                                             <span id="weather-time">12:00 AM</span>
                                         </div>
-                                        <input type="range" class="time-slider" id="weather-slider" min="0" max="1440" step="1" value="0">
+                                        <input type="range" class="time-slider" id="weather-slider" min="0" max="1440" step="1" value="0" disabled>
                                         <div class="slider-ends">
                                             <span>12:00 AM</span>
                                             <span>12:00 AM</span>
@@ -1196,7 +1207,7 @@
                                             <label for="dashboard-slider">Time (Auto-Controlled)</label>
                                             <span id="dashboard-time">12:00 AM</span>
                                         </div>
-                                        <input type="range" class="time-slider" id="dashboard-slider" min="0" max="1440" step="1" value="0">
+                                        <input type="range" class="time-slider" id="dashboard-slider" min="0" max="1440" step="1" value="0" disabled>
                                         <div class="slider-ends">
                                             <span>12:00 AM</span>
                                             <span>12:00 AM</span>
@@ -1248,10 +1259,10 @@
                                 </div>
                                 <p class="card-description">Compare sky conditions across different locations and time zones. Great for travel apps showing destination weather.</p>
                                 <div class="location-selector">
-                                    <button class="location-btn active" data-location="new-york" aria-pressed="true">New York</button>
-                                    <button class="location-btn" data-location="tokyo" aria-pressed="false">Tokyo</button>
-                                    <button class="location-btn" data-location="london" aria-pressed="false">London</button>
-                                    <button class="location-btn" data-location="sydney" aria-pressed="false">Sydney</button>
+                                    <button class="location-btn active" data-location="new-york" aria-pressed="true" disabled>New York</button>
+                                    <button class="location-btn" data-location="tokyo" aria-pressed="false" disabled>Tokyo</button>
+                                    <button class="location-btn" data-location="london" aria-pressed="false" disabled>London</button>
+                                    <button class="location-btn" data-location="sydney" aria-pressed="false" disabled>Sydney</button>
                                 </div>
                                 <div class="card-controls-inline">
                                     <div class="slider-container">
@@ -1259,7 +1270,7 @@
                                             <label for="travel-slider">Local Time</label>
                                             <span id="travel-time">12:00 AM</span>
                                         </div>
-                                        <input type="range" class="time-slider" id="travel-slider" min="0" max="1440" step="1" value="0">
+                                        <input type="range" class="time-slider" id="travel-slider" min="0" max="1440" step="1" value="0" disabled>
                                         <div class="slider-ends">
                                             <span>12:00 AM</span>
                                             <span>12:00 AM</span>
@@ -1369,7 +1380,7 @@
                                             <label for="product-slider">Sky Time</label>
                                             <span id="product-time">12:00 AM</span>
                                         </div>
-                                        <input type="range" class="time-slider" id="product-slider" min="0" max="1440" step="1" value="0">
+                                        <input type="range" class="time-slider" id="product-slider" min="0" max="1440" step="1" value="0" disabled>
                                         <div class="slider-ends">
                                             <span>12:00 AM</span>
                                             <span>12:00 AM</span>
@@ -1561,7 +1572,7 @@
                                     <label for="compare-slider">Compare Time</label>
                                     <span id="compare-time">12:00 AM</span>
                                 </div>
-                                <input type="range" class="time-slider" id="compare-slider" min="0" max="1440" step="1" value="0">
+                                <input type="range" class="time-slider" id="compare-slider" min="0" max="1440" step="1" value="0" disabled>
                                 <div class="slider-ends">
                                     <span>12:00 AM</span>
                                     <span>12:00 AM</span>
@@ -1740,6 +1751,7 @@
         
         backgroundSky.init().then(() => {
             const backgroundSlider = document.getElementById('background-slider');
+            backgroundSlider.removeAttribute('disabled');
             const backgroundTimeDisplay = document.getElementById('background-time');
             let resetTimeout = null;
             
@@ -1822,6 +1834,7 @@
 
         weatherSky.init().then(() => {
             const slider = document.getElementById('weather-slider');
+            slider.removeAttribute('disabled');
             const timeDisplay = document.getElementById('weather-time');
             
             function updateWeatherSky() {
@@ -1849,6 +1862,7 @@
 
         dashboardSky.init().then(() => {
             const slider = document.getElementById('dashboard-slider');
+            slider.removeAttribute('disabled');
             const timeDisplay = document.getElementById('dashboard-time');
             
             function updateDashboardSky() {
@@ -1901,6 +1915,8 @@
 
         travelSky.init().then(() => {
             const slider = document.getElementById('travel-slider');
+            slider.removeAttribute('disabled');
+            document.querySelectorAll('.location-btn').forEach(btn => btn.removeAttribute('disabled'));
             const timeDisplay = document.getElementById('travel-time');
             const labelDisplay = document.getElementById('travel-label');
             
@@ -1970,6 +1986,7 @@
 
         productSky.init().then(() => {
             const slider = document.getElementById('product-slider');
+            slider.removeAttribute('disabled');
             const timeDisplay = document.getElementById('product-time');
             
             function updateProductSky() {
@@ -2037,6 +2054,7 @@
 
         Promise.all(comparisonSkies.map(sky => sky.init())).then(() => {
             const slider = document.getElementById('compare-slider');
+            slider.removeAttribute('disabled');
             const timeDisplay = document.getElementById('compare-time');
             
             function updateComparison() {
