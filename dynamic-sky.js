@@ -307,8 +307,8 @@
     // Default configuration
     this.config = {
       // DOM selectors
-      skyContainer: options.skyContainer || '#background-sky',
-      starsContainer: options.starsContainer || '#stars-container',
+      skyContainer: (typeof options.skyContainer === 'string') ? options.skyContainer : '#background-sky',
+      starsContainer: (typeof options.starsContainer === 'string') ? options.starsContainer : '#stars-container',
       
       // Location
       latitude: options.latitude || null,
@@ -316,15 +316,17 @@
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      starLayers: Math.min(Math.max(options.starLayers || 3, 0), 10),
+      starDensity: Math.min(Math.max(options.starDensity || 5, 0), 50),
       
       // Callbacks
-      onUpdate: options.onUpdate || null,
-      onLocationDetected: options.onLocationDetected || null,
+      onUpdate: (typeof options.onUpdate === 'function') ? options.onUpdate : null,
+      onLocationDetected: (typeof options.onLocationDetected === 'function') ? options.onLocationDetected : null,
       
       // Location API
-      locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
+      locationApiUrl: (typeof options.locationApiUrl === 'string' && /^https?:\/\//i.test(options.locationApiUrl))
+        ? options.locationApiUrl
+        : 'https://ipwho.is/'
     };
 
     // Internal state
