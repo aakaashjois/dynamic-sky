@@ -41,6 +41,7 @@
   var EXPOSURE = 25.0;
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
+  var DEFAULT_LOCATION_API_URL = 'https://ipwho.is/';
 
   function rayleighPhase(cosAngle) {
     return (3 * (1 + cosAngle * cosAngle)) / (16 * PI);
@@ -304,11 +305,44 @@
   function DynamicSky(options) {
     options = options || {};
     
+    // Validate inputs
+    var starLayers = options.starLayers || 3;
+    if (typeof starLayers === 'number') {
+      // Limit layers to prevent excessive DOM creation
+      starLayers = Math.max(1, Math.min(10, starLayers));
+    } else {
+      starLayers = 3;
+    }
+
+    var starDensity = options.starDensity || 5;
+    if (typeof starDensity === 'number') {
+      // Limit density to prevent excessive DOM creation
+      starDensity = Math.max(1, Math.min(50, starDensity));
+    } else {
+      starDensity = 5;
+    }
+
+    var locationApiUrl = options.locationApiUrl || DEFAULT_LOCATION_API_URL;
+    if (typeof locationApiUrl !== 'string' || (!locationApiUrl.startsWith('http://') && !locationApiUrl.startsWith('https://'))) {
+      console.warn('DynamicSky: Invalid locationApiUrl provided. Reverting to default.');
+      locationApiUrl = DEFAULT_LOCATION_API_URL;
+    }
+
+    var skyContainer = options.skyContainer;
+    if (typeof skyContainer !== 'string') {
+      skyContainer = '#background-sky';
+    }
+
+    var starsContainer = options.starsContainer;
+    if (typeof starsContainer !== 'string') {
+      starsContainer = '#stars-container';
+    }
+
     // Default configuration
     this.config = {
       // DOM selectors
-      skyContainer: options.skyContainer || '#background-sky',
-      starsContainer: options.starsContainer || '#stars-container',
+      skyContainer: skyContainer,
+      starsContainer: starsContainer,
       
       // Location
       latitude: options.latitude || null,
@@ -316,15 +350,15 @@
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      starLayers: starLayers,
+      starDensity: starDensity,
       
       // Callbacks
-      onUpdate: options.onUpdate || null,
-      onLocationDetected: options.onLocationDetected || null,
+      onUpdate: typeof options.onUpdate === 'function' ? options.onUpdate : null,
+      onLocationDetected: typeof options.onLocationDetected === 'function' ? options.onLocationDetected : null,
       
       // Location API
-      locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
+      locationApiUrl: locationApiUrl
     };
 
     // Internal state
