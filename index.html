@@ -1089,7 +1089,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1149,7 +1149,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1213,7 +1213,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1276,7 +1276,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1328,7 +1328,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1391,7 +1391,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1452,7 +1452,7 @@
                             Multiple sky instances showing different times simultaneously
                         </p>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1523,7 +1523,7 @@
                             </div>
                         </div>
                         <div class="code-accordion">
-                            <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                            <button type="button" class="code-accordion-header" aria-expanded="false">
                                 <span>Code</span>
                             </button>
                             <div class="code-accordion-content">
@@ -1589,7 +1589,7 @@
                     </div>
                     <p class="card-description">Initialize with custom containers and specific coordinates for precise control over sky placement and location.</p>
                     <div class="code-accordion">
-                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false">
                             <span>Code</span>
                         </button>
                         <div class="code-accordion-content">
@@ -1620,7 +1620,7 @@
                     </div>
                     <p class="card-description">Change the sky programmatically without user interaction. Perfect for automated updates or animations.</p>
                     <div class="code-accordion">
-                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false">
                             <span>Code</span>
                         </button>
                         <div class="code-accordion-content">
@@ -1649,7 +1649,7 @@
                     </div>
                     <p class="card-description">Update the location after initialization to show sky conditions at different places.</p>
                     <div class="code-accordion">
-                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false">
                             <span>Code</span>
                         </button>
                         <div class="code-accordion-content">
@@ -1676,7 +1676,7 @@
                     </div>
                     <p class="card-description">Keep the sky synchronized with the current time automatically.</p>
                     <div class="code-accordion">
-                        <button type="button" class="code-accordion-header" aria-expanded="false" onclick="this.classList.toggle('expanded'); this.setAttribute('aria-expanded', this.classList.contains('expanded')); this.nextElementSibling.classList.toggle('expanded');">
+                        <button type="button" class="code-accordion-header" aria-expanded="false">
                             <span>Code</span>
                         </button>
                         <div class="code-accordion-content">
@@ -2072,6 +2072,43 @@
                     target.focus();
                 }
             });
+        });
+
+        // Initialize code accordions
+        document.querySelectorAll('.code-accordion-header').forEach(header => {
+            // Add click event listener
+            header.addEventListener('click', () => {
+                const expanded = header.classList.toggle('expanded');
+                header.setAttribute('aria-expanded', expanded);
+                const content = header.nextElementSibling;
+                if (content) {
+                    content.classList.toggle('expanded');
+                }
+
+                // Update aria-label text if it has our custom pattern
+                const currentLabel = header.getAttribute('aria-label');
+                if (currentLabel) {
+                    if (expanded && currentLabel.startsWith('Show code')) {
+                        header.setAttribute('aria-label', currentLabel.replace('Show code', 'Hide code'));
+                    } else if (!expanded && currentLabel.startsWith('Hide code')) {
+                        header.setAttribute('aria-label', currentLabel.replace('Hide code', 'Show code'));
+                    }
+                }
+            });
+
+            // Accessibility enhancement: Add descriptive aria-labels
+            // Find the closest card title
+            const card = header.closest('.card, .use-case-card');
+            if (card) {
+                const titleEl = card.querySelector('.card-title');
+                if (titleEl) {
+                    // Get text content, cleaning up any icons or extra whitespace
+                    const titleText = titleEl.textContent.trim().replace(/^[\W_]+/, '').trim();
+                    if (titleText) {
+                        header.setAttribute('aria-label', `Show code for ${titleText}`);
+                    }
+                }
+            }
         });
 
         // Initialize copy buttons
