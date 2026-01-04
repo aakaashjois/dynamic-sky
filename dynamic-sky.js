@@ -55,17 +55,22 @@
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
-  function computeTransmittance(height, angle, out) {
-    var rayOriginX = 0;
+  function computeTransmittance(height, cosAngle, out) {
     var rayOriginY = GROUND_RADIUS + height;
-    var rayOriginZ = 0;
 
-    var rayDirectionX = Math.sin(angle);
-    var rayDirectionY = Math.cos(angle);
-    var rayDirectionZ = 0;
+    // Optimization: Calculate sine directly from cosine using Pythagorean identity
+    // sin^2 + cos^2 = 1 => sin = sqrt(1 - cos^2)
+    // We assume angle is in [0, PI], so sin is >= 0
+    var rayDirectionY = cosAngle;
+    var rayDirectionX = Math.sqrt(Math.max(0, 1.0 - cosAngle * cosAngle));
 
-    var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
-    var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
+    // Optimization: Simplify dot product and magnitude calc knowing:
+    // rayOrigin = [0, rayOriginY, 0], rayDirection = [rayDirectionX, rayDirectionY, 0]
+    // b = dot(rayOrigin, rayDirection) = rayOriginY * rayDirectionY
+    var b = rayOriginY * rayDirectionY;
+
+    // c = dot(rayOrigin, rayOrigin) - TOP_RADIUS^2
+    var c = (rayOriginY * rayOriginY) - (TOP_RADIUS * TOP_RADIUS);
     var discr = b * b - c;
 
     var distance;
@@ -94,7 +99,8 @@
 
     for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
       // pos = rayOrigin + rayDirection * tCurrent
-      var posX = rayOriginX + rayDirectionX * tCurrent;
+      // rayOriginX is 0, so posX = rayDirectionX * tCurrent
+      var posX = rayDirectionX * tCurrent;
       var posY = rayOriginY + rayDirectionY * tCurrent;
       // Simplified calculation: posZ term omitted since rayOriginZ and rayDirectionZ are both 0
 
@@ -830,10 +836,12 @@
         if (startRayCos < -1) startRayCos = -1;
         if (startRayCos > 1) startRayCos = 1;
 
-        var startRayAngle = Math.acos(Math.abs(startRayCos));
+        // Optimization: Pass cosine directly to avoid Math.acos() call
+        // Note: computeTransmittance expects non-negative sin component (angle 0..PI)
+        // We use abs(startRayCos) to ensure we are looking "up" in the local frame relative to vertical
         computeTransmittance(
           startHeight,
-          startRayAngle,
+          Math.abs(startRayCos),
           transmittanceCameraToSpace
         );
 
@@ -870,12 +878,10 @@
           if (sunCos < -1) sunCos = -1;
           if (sunCos > 1) sunCos = 1;
 
-          var viewAngle = Math.acos(Math.abs(viewCos));
-          var sunAngle = Math.acos(sunCos);
-
+          // Optimization: Pass cosine directly to avoid Math.acos() calls
           computeTransmittance(
             sampleHeight,
-            viewAngle,
+            Math.abs(viewCos),
             transmittanceToSpace
           );
 
@@ -891,7 +897,7 @@
             transmittanceCameraToSample2 = transmittanceCameraToSpace[2] / transmittanceToSpace[2];
           }
 
-          computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
+          computeTransmittance(sampleHeight, sunCos, transmittanceLight);
           var opticalDensityRay = Math.exp(
             -sampleHeight / RAYLEIGH_SCALE_HEIGHT
           );
