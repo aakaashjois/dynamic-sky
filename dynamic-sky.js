@@ -303,28 +303,59 @@
    */
   function DynamicSky(options) {
     options = options || {};
+
+    // Security: Validate DOM selectors to ensure they are strings
+    var skyContainer = typeof options.skyContainer === 'string' ? options.skyContainer : '#background-sky';
+    var starsContainer = typeof options.starsContainer === 'string' ? options.starsContainer : '#stars-container';
+
+    // Security: Validate numeric options to prevent Client-Side DoS (excessive memory/CPU usage)
+    // Limit star layers to 5 and density to 20 to ensure performance
+    var starLayers = typeof options.starLayers === 'number' ? clamp(options.starLayers, 0, 5) : 3;
+    var starDensity = typeof options.starDensity === 'number' ? clamp(options.starDensity, 0, 20) : 5;
+
+    // Security: Validate Location Coordinates
+    var latitude = options.latitude;
+    var longitude = options.longitude;
+    // Only accept if both are provided and valid numbers
+    if (latitude !== undefined || longitude !== undefined) {
+      if (!isValidCoordinate(latitude, longitude)) {
+        console.warn('DynamicSky: Invalid coordinates provided. Falling back to auto-detection or defaults.');
+        latitude = null;
+        longitude = null;
+      }
+    } else {
+      latitude = null;
+      longitude = null;
+    }
+
+    // Security: Validate API URL to prevent using non-http protocols
+    var locationApiUrl = options.locationApiUrl || 'https://ipwho.is/';
+    if (typeof locationApiUrl !== 'string' || !/^https?:\/\//i.test(locationApiUrl)) {
+      console.warn('DynamicSky: Invalid locationApiUrl (must be http/https). Using default.');
+      locationApiUrl = 'https://ipwho.is/';
+    }
     
     // Default configuration
     this.config = {
       // DOM selectors
-      skyContainer: options.skyContainer || '#background-sky',
-      starsContainer: options.starsContainer || '#stars-container',
+      skyContainer: skyContainer,
+      starsContainer: starsContainer,
       
       // Location
-      latitude: options.latitude || null,
-      longitude: options.longitude || null,
+      latitude: latitude,
+      longitude: longitude,
       autoDetectLocation: options.autoDetectLocation !== false,
       
       // Sky rendering options
-      starLayers: options.starLayers || 3,
-      starDensity: options.starDensity || 5,
+      starLayers: starLayers,
+      starDensity: starDensity,
       
       // Callbacks
-      onUpdate: options.onUpdate || null,
-      onLocationDetected: options.onLocationDetected || null,
+      onUpdate: typeof options.onUpdate === 'function' ? options.onUpdate : null,
+      onLocationDetected: typeof options.onLocationDetected === 'function' ? options.onLocationDetected : null,
       
       // Location API
-      locationApiUrl: options.locationApiUrl || 'https://ipwho.is/'
+      locationApiUrl: locationApiUrl
     };
 
     // Internal state
