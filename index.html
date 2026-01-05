@@ -940,6 +940,62 @@
                 transform: translateX(-50%);
             }
         }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            padding: 0;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            background: var(--accent);
+            color: black;
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .back-to-top:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .back-to-top {
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+                transform: none;
+            }
+            .back-to-top.visible {
+                transform: none;
+            }
+            .back-to-top:hover {
+                transform: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2109,5 +2165,70 @@
             <p style="color: var(--text-secondary); font-size: 0.9rem; font-weight: 600;">© 2025 Aakaash Jois</p>
         </div>
     </footer>
+
+    <!-- Back to Top Button -->
+    <button type="button" id="back-to-top" class="back-to-top" aria-label="Back to top">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m18 15-6-6-6 6"/>
+        </svg>
+    </button>
+
+    <script>
+        // Back to Top Button Logic
+        (function() {
+            const backToTopBtn = document.getElementById('back-to-top');
+
+            function getScrollTop() {
+                return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+            }
+
+            function toggleBackToTop() {
+                if (getScrollTop() > 500) {
+                    backToTopBtn.classList.add('visible');
+                    backToTopBtn.removeAttribute('aria-hidden');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                    backToTopBtn.setAttribute('aria-hidden', 'true');
+                }
+            }
+
+            // Initialize state
+            backToTopBtn.setAttribute('aria-hidden', 'true');
+            toggleBackToTop();
+
+            window.addEventListener('scroll', toggleBackToTop, { passive: true });
+            document.body.addEventListener('scroll', toggleBackToTop, { passive: true });
+
+            backToTopBtn.addEventListener('click', function() {
+                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                // Try scrolling both window and body to be safe
+                window.scrollTo({
+                    top: 0,
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                });
+                document.body.scrollTo({
+                    top: 0,
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                });
+                document.documentElement.scrollTo({
+                    top: 0,
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
+                });
+
+                // Move focus to the main heading for accessibility
+                const h1 = document.querySelector('h1');
+                if (h1) {
+                    h1.setAttribute('tabindex', '-1');
+                    h1.focus();
+                    // Clean up tabindex after blur so it doesn't stay focusable if it wasn't before
+                    h1.addEventListener('blur', function removeTabIndex() {
+                        h1.removeAttribute('tabindex');
+                        h1.removeEventListener('blur', removeTabIndex);
+                    });
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
