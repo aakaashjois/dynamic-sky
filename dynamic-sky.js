@@ -310,14 +310,14 @@
 
     // Security: Validate numeric options to prevent Client-Side DoS (excessive memory/CPU usage)
     // Limit star layers to 5 and density to 20 to ensure performance
-    var starLayers = typeof options.starLayers === 'number' ? clamp(options.starLayers, 0, 5) : 3;
-    var starDensity = typeof options.starDensity === 'number' ? clamp(options.starDensity, 0, 20) : 5;
+    var starLayers = (typeof options.starLayers === 'number' && isFinite(options.starLayers)) ? clamp(options.starLayers, 0, 5) : 3;
+    var starDensity = (typeof options.starDensity === 'number' && isFinite(options.starDensity)) ? clamp(options.starDensity, 0, 20) : 5;
 
     // Security: Validate Location Coordinates
     var latitude = options.latitude;
     var longitude = options.longitude;
     // Only accept if both are provided and valid numbers
-    if (latitude !== undefined || longitude !== undefined) {
+    if (latitude !== undefined && longitude !== undefined) {
       if (!isValidCoordinate(latitude, longitude)) {
         console.warn('DynamicSky: Invalid coordinates provided. Falling back to auto-detection or defaults.');
         latitude = null;
