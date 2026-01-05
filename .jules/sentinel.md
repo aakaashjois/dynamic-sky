@@ -1,4 +1,4 @@
-## 2025-05-18 - Insecure Dynamic Script Loading
-**Vulnerability:** The `ensureSunCalc` function was using `XMLHttpRequest` with `new Function(script)` (eval) to load external code, which is dangerous. The fallback script injection lacked Subresource Integrity (SRI) and `crossorigin` attributes, making it vulnerable to dependency hijacking.
-**Learning:** Legacy sync XHR + eval patterns are still lurking in "vanilla JS" libraries to avoid callbacks/promises, but they introduce severe RCE risks. Always prioritize standard `<script>` injection with SRI over custom loaders.
-**Prevention:** Enforce SRI for all external scripts. Avoid `new Function()` or `eval()` for loading code. Use standard async script loading patterns.
+## 2024-05-23 - Client-Side DoS Protection
+**Vulnerability:** Client-Side Denial of Service (DoS) via unvalidated configuration options (`starDensity`, `starLayers`).
+**Learning:** Even client-side libraries can be vectors for DoS if they allow unbounded resource creation (DOM elements) based on user input or misconfiguration. Input validation in the constructor is crucial.
+**Prevention:** Always clamp configuration values that directly impact resource allocation (loops, DOM creation) to reasonable maximums.
