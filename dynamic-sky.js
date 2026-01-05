@@ -32,6 +32,11 @@
   var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
   var RAYLEIGH_SCALE_HEIGHT = 8e3;
   var MIE_SCALE_HEIGHT = 1.2e3;
+  // Pre-calculated inverse constants for optimization
+  var INV_RAYLEIGH_SCALE_HEIGHT = 1.0 / RAYLEIGH_SCALE_HEIGHT;
+  var INV_MIE_SCALE_HEIGHT = 1.0 / MIE_SCALE_HEIGHT;
+  var INV_OZONE_WIDTH = 1.0 / 15e3;
+
   var GROUND_RADIUS = 6360000;
   var TOP_RADIUS = 6460000;
   var SUN_INTENSITY = 1.0;
@@ -56,16 +61,20 @@
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
   function computeTransmittance(height, angle, out) {
-    var rayOriginX = 0;
+    // rayOrigin = [0, GROUND_RADIUS + height, 0]
     var rayOriginY = GROUND_RADIUS + height;
-    var rayOriginZ = 0;
 
+    // rayDirection = [sin(angle), cos(angle), 0]
     var rayDirectionX = Math.sin(angle);
     var rayDirectionY = Math.cos(angle);
-    var rayDirectionZ = 0;
 
-    var b = rayOriginX * rayDirectionX + rayOriginY * rayDirectionY + rayOriginZ * rayDirectionZ;
-    var c = (rayOriginX * rayOriginX + rayOriginY * rayOriginY + rayOriginZ * rayOriginZ) - (TOP_RADIUS * TOP_RADIUS);
+    // Optimized: b = dot(rayOrigin, rayDirection)
+    // Since rayOriginX, rayOriginZ, rayDirectionZ are 0, we only compute Y terms
+    var b = rayOriginY * rayDirectionY;
+
+    // Optimized: c = dot(rayOrigin, rayOrigin) - TOP_RADIUS^2
+    var c = (rayOriginY * rayOriginY) - (TOP_RADIUS * TOP_RADIUS);
+
     var discr = b * b - c;
 
     var distance;
@@ -92,26 +101,35 @@
     var odMie = 0;
     var odOzone = 0;
 
+    // Optimization: rayOriginX is 0, so posX = rayDirectionX * tCurrent
+    // rayOriginY is computed above
     for (var i = 0; i < INTEGRATION_SAMPLES; i++) {
       // pos = rayOrigin + rayDirection * tCurrent
-      var posX = rayOriginX + rayDirectionX * tCurrent;
+      var posX = rayDirectionX * tCurrent;
       var posY = rayOriginY + rayDirectionY * tCurrent;
-      // Simplified calculation: posZ term omitted since rayOriginZ and rayDirectionZ are both 0
 
       // Manual sqrt is faster than Math.hypot
       var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
-      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
-      odRayleigh += dR * segmentLength;
+      // Optimization: use pre-calculated inverse constants to replace division with multiplication
+      var dR = Math.exp(-h * INV_RAYLEIGH_SCALE_HEIGHT);
+      var dM = Math.exp(-h * INV_MIE_SCALE_HEIGHT);
 
-      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
-      odOzone += ozoneDensity * segmentLength;
-      odMie += dM * segmentLength;
+      // Optimization: defer multiplication by segmentLength until after the loop
+      odRayleigh += dR;
+
+      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) * INV_OZONE_WIDTH, 1.0);
+      odOzone += ozoneDensity;
+      odMie += dM;
 
       tCurrent += segmentLength;
     }
+
+    // Apply segmentLength at the end (saves 3 * INTEGRATION_SAMPLES multiplications)
+    odRayleigh *= segmentLength;
+    odMie *= segmentLength;
+    odOzone *= segmentLength;
 
     var tauR0 = RAYLEIGH_SCATTER[0] * odRayleigh;
     var tauR1 = RAYLEIGH_SCATTER[1] * odRayleigh;
@@ -943,16 +961,19 @@
           var rayleighTerm2 = RAYLEIGH_SCATTER[2] * opticalDensityRay * phaseR;
           var scatteredRgb2 = transmittanceLight[2] * (rayleighTerm2 + mieTerm);
 
-          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0 * segmentLength;
-          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1 * segmentLength;
-          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2 * segmentLength;
+          // Optimization: defer multiplication by segmentLength until after the loop
+          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0;
+          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1;
+          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2;
 
           tRay += segmentLength;
         }
 
-        inscatteredX *= SUN_INTENSITY;
-        inscatteredY *= SUN_INTENSITY;
-        inscatteredZ *= SUN_INTENSITY;
+        // Apply segmentLength and SUN_INTENSITY at once
+        var intensityFactor = segmentLength * SUN_INTENSITY;
+        inscatteredX *= intensityFactor;
+        inscatteredY *= intensityFactor;
+        inscatteredZ *= intensityFactor;
       }
 
       // Exposure
