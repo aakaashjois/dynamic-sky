@@ -328,10 +328,10 @@
       longitude = null;
     }
 
-    // Security: Validate API URL to prevent using non-http protocols
+    // Security: Validate API URL to ensure secure HTTPS protocol
     var locationApiUrl = options.locationApiUrl || 'https://ipwho.is/';
-    if (typeof locationApiUrl !== 'string' || !/^https?:\/\//i.test(locationApiUrl)) {
-      console.warn('DynamicSky: Invalid locationApiUrl (must be http/https). Using default.');
+    if (typeof locationApiUrl !== 'string' || !/^https:\/\//i.test(locationApiUrl)) {
+      console.warn('DynamicSky: Invalid locationApiUrl (must be https). Using default.');
       locationApiUrl = 'https://ipwho.is/';
     }
     
