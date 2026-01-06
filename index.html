@@ -940,6 +940,61 @@
                 transform: translateX(-50%);
             }
         }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease, visibility 0s 0.3s;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transform: translateY(20px);
+            visibility: hidden;
+            text-decoration: none;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+            transition: all 0.3s ease;
+        }
+
+        .back-to-top:hover {
+            background: var(--accent);
+            color: black;
+            border-color: var(--accent);
+            transform: translateY(-4px);
+        }
+
+        .back-to-top:focus-visible {
+             outline: 2px solid var(--accent);
+             outline-offset: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .back-to-top {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1705,6 +1760,11 @@
         </div>
     </section>
 
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top" aria-hidden="true">
+        ↑
+    </button>
+
     <!-- Load DynamicSky Library (SunCalc is auto-loaded) -->
     <script src="dynamic-sky.js"></script>
     
@@ -2102,6 +2162,43 @@
                     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
                 }
             });
+        });
+
+        // Back to Top functionality
+        const backToTopBtn = document.getElementById('back-to-top');
+
+        function toggleBackToTop() {
+            // Check both window and body scroll position to support different browser behaviors
+            // with html, body { height: 100% }
+            const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+
+            if (scrollY > 500) {
+                backToTopBtn.classList.add('visible');
+                backToTopBtn.setAttribute('aria-hidden', 'false');
+            } else {
+                backToTopBtn.classList.remove('visible');
+                backToTopBtn.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        // Check on scroll (listen on window and body)
+        window.addEventListener('scroll', toggleBackToTop);
+        document.body.addEventListener('scroll', toggleBackToTop);
+
+        // Handle click
+        backToTopBtn.addEventListener('click', () => {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
+
+            // Move focus to main heading for accessibility
+            const mainHeading = document.querySelector('h1');
+            if (mainHeading) {
+                mainHeading.setAttribute('tabindex', '-1');
+                mainHeading.focus();
+            }
         });
     </script>
     <footer style="text-align: center; padding: 2rem; position: relative; z-index: 1;">
