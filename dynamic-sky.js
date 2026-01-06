@@ -104,14 +104,20 @@
 
       var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
       var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
-      odRayleigh += dR * segmentLength;
+      odRayleigh += dR;
 
       var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
-      odOzone += ozoneDensity * segmentLength;
-      odMie += dM * segmentLength;
+      odOzone += ozoneDensity;
+      odMie += dM;
 
       tCurrent += segmentLength;
     }
+
+    // Optimization: Multiply by segmentLength once after loop instead of inside
+    // Saves 3 * INTEGRATION_SAMPLES multiplications
+    odRayleigh *= segmentLength;
+    odMie *= segmentLength;
+    odOzone *= segmentLength;
 
     var tauR0 = RAYLEIGH_SCATTER[0] * odRayleigh;
     var tauR1 = RAYLEIGH_SCATTER[1] * odRayleigh;
@@ -943,12 +949,17 @@
           var rayleighTerm2 = RAYLEIGH_SCATTER[2] * opticalDensityRay * phaseR;
           var scatteredRgb2 = transmittanceLight[2] * (rayleighTerm2 + mieTerm);
 
-          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0 * segmentLength;
-          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1 * segmentLength;
-          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2 * segmentLength;
+          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0;
+          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1;
+          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2;
 
           tRay += segmentLength;
         }
+
+        // Optimization: Apply segmentLength multiplication at end of integration
+        inscatteredX *= segmentLength;
+        inscatteredY *= segmentLength;
+        inscatteredZ *= segmentLength;
 
         inscatteredX *= SUN_INTENSITY;
         inscatteredY *= SUN_INTENSITY;
