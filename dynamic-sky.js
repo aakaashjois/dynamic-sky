@@ -32,6 +32,9 @@
   var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
   var RAYLEIGH_SCALE_HEIGHT = 8e3;
   var MIE_SCALE_HEIGHT = 1.2e3;
+  // Pre-calculate inverse scale heights to replace division with multiplication in hot loops
+  var INV_RAYLEIGH_SCALE_HEIGHT = 1.0 / RAYLEIGH_SCALE_HEIGHT;
+  var INV_MIE_SCALE_HEIGHT = 1.0 / MIE_SCALE_HEIGHT;
   var GROUND_RADIUS = 6360000;
   var TOP_RADIUS = 6460000;
   var SUN_INTENSITY = 1.0;
@@ -102,16 +105,25 @@
       var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
-      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
-      odRayleigh += dR * segmentLength;
+      // Use pre-calculated inverse constants to avoid division
+      var dR = Math.exp(-h * INV_RAYLEIGH_SCALE_HEIGHT);
+      var dM = Math.exp(-h * INV_MIE_SCALE_HEIGHT);
+
+      // Optimization: Accumulate density without multiplying by segmentLength inside the loop
+      // We multiply the total sum by segmentLength once after the loop
+      odRayleigh += dR;
+      odMie += dM;
 
       var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
-      odOzone += ozoneDensity * segmentLength;
-      odMie += dM * segmentLength;
+      odOzone += ozoneDensity;
 
       tCurrent += segmentLength;
     }
+
+    // Apply segmentLength multiplication once after loop
+    odRayleigh *= segmentLength;
+    odMie *= segmentLength;
+    odOzone *= segmentLength;
 
     var tauR0 = RAYLEIGH_SCATTER[0] * odRayleigh;
     var tauR1 = RAYLEIGH_SCATTER[1] * odRayleigh;
@@ -923,10 +935,10 @@
           }
 
           computeTransmittance(sampleHeight, sunAngle, transmittanceLight);
-          var opticalDensityRay = Math.exp(
-            -sampleHeight / RAYLEIGH_SCALE_HEIGHT
-          );
-          var opticalDensityMie = Math.exp(-sampleHeight / MIE_SCALE_HEIGHT);
+
+          // Use pre-calculated inverse constants
+          var opticalDensityRay = Math.exp(-sampleHeight * INV_RAYLEIGH_SCALE_HEIGHT);
+          var opticalDensityMie = Math.exp(-sampleHeight * INV_MIE_SCALE_HEIGHT);
 
           // Rayleigh and Mie terms
           // rayleighTerm[k] = RAYLEIGH_SCATTER[k] * opticalDensityRay * phaseR
@@ -943,16 +955,18 @@
           var rayleighTerm2 = RAYLEIGH_SCATTER[2] * opticalDensityRay * phaseR;
           var scatteredRgb2 = transmittanceLight[2] * (rayleighTerm2 + mieTerm);
 
-          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0 * segmentLength;
-          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1 * segmentLength;
-          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2 * segmentLength;
+          // Optimization: Accumulate scattered light without multiplying by segmentLength inside the loop
+          inscatteredX += transmittanceCameraToSample0 * scatteredRgb0;
+          inscatteredY += transmittanceCameraToSample1 * scatteredRgb1;
+          inscatteredZ += transmittanceCameraToSample2 * scatteredRgb2;
 
           tRay += segmentLength;
         }
 
-        inscatteredX *= SUN_INTENSITY;
-        inscatteredY *= SUN_INTENSITY;
-        inscatteredZ *= SUN_INTENSITY;
+        // Apply segmentLength multiplication once after loop
+        inscatteredX *= segmentLength * SUN_INTENSITY;
+        inscatteredY *= segmentLength * SUN_INTENSITY;
+        inscatteredZ *= segmentLength * SUN_INTENSITY;
       }
 
       // Exposure
