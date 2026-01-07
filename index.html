@@ -20,7 +20,7 @@
         
         html, body {
             width: 100%;
-            height: 100%;
+            /* Removed height: 100% to fix scrolling on window */
             margin: 0;
             padding: 0;
             overflow-x: hidden;
@@ -938,6 +938,60 @@
             }
             .scroll-indicator:hover {
                 transform: translateX(-50%);
+            }
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: var(--primary-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .back-to-top:hover {
+            background: var(--accent);
+            color: black;
+            transform: translateY(-5px);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .back-to-top:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .back-to-top {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                width: 3rem;
+                height: 3rem;
+                font-size: 1.25rem;
             }
         }
     </style>
@@ -2102,6 +2156,45 @@
                     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
                 }
             });
+        });
+
+        // Back to Top functionality
+        const backToTopBtn = document.createElement('button');
+        backToTopBtn.className = 'back-to-top';
+        backToTopBtn.innerHTML = '↑';
+        backToTopBtn.ariaLabel = 'Back to top';
+        backToTopBtn.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(backToTopBtn);
+
+        function toggleBackToTop() {
+            const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop;
+            if (scrollTop > window.innerHeight * 0.5) {
+                backToTopBtn.classList.add('visible');
+                backToTopBtn.setAttribute('aria-hidden', 'false');
+            } else {
+                backToTopBtn.classList.remove('visible');
+                backToTopBtn.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        window.addEventListener('scroll', toggleBackToTop, { passive: true });
+
+        backToTopBtn.addEventListener('click', () => {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
+
+            const h1 = document.querySelector('h1');
+            if (h1) {
+                h1.setAttribute('tabindex', '-1');
+                h1.focus({ preventScroll: true });
+                h1.addEventListener('blur', () => {
+                    h1.removeAttribute('tabindex');
+                }, { once: true });
+            }
         });
     </script>
     <footer style="text-align: center; padding: 2rem; position: relative; z-index: 1;">
