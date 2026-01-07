@@ -330,8 +330,9 @@
 
     // Security: Validate API URL to prevent using non-http protocols
     var locationApiUrl = options.locationApiUrl || 'https://ipwho.is/';
-    if (typeof locationApiUrl !== 'string' || !/^https?:\/\//i.test(locationApiUrl)) {
-      console.warn('DynamicSky: Invalid locationApiUrl (must be http/https). Using default.');
+    // STRICTLY enforce HTTPS to prevent MITM attacks and privacy leaks
+    if (typeof locationApiUrl !== 'string' || !/^https:\/\//i.test(locationApiUrl)) {
+      console.warn('DynamicSky: Invalid locationApiUrl (must be https). Using default.');
       locationApiUrl = 'https://ipwho.is/';
     }
     
