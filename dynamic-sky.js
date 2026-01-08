@@ -32,6 +32,9 @@
   var OZONE_ABSORB = [0.65e-6, 1.881e-6, 0.085e-6];
   var RAYLEIGH_SCALE_HEIGHT = 8e3;
   var MIE_SCALE_HEIGHT = 1.2e3;
+  var RAYLEIGH_SCALE_HEIGHT_INV = 1.0 / RAYLEIGH_SCALE_HEIGHT;
+  var MIE_SCALE_HEIGHT_INV = 1.0 / MIE_SCALE_HEIGHT;
+  var OZONE_SCALE_INV = 1.0 / 15e3;
   var GROUND_RADIUS = 6360000;
   var TOP_RADIUS = 6460000;
   var SUN_INTENSITY = 1.0;
@@ -42,16 +45,28 @@
   var GAMMA = 2.2;
   var SUNSET_BIAS_STRENGTH = 0.1;
 
+  // Precompute constants for Phase Functions to avoid repeated math
+  var RAYLEIGH_CONST = 3 / (16 * PI);
+  var MIE_G = 0.8;
+  var MIE_G2 = MIE_G * MIE_G;
+  var MIE_SCALE = 3 / (8 * PI);
+  var MIE_NUM_CONST = (1 - MIE_G2);
+  var MIE_DENOM_CONST_A = (2 + MIE_G2);
+  var MIE_DENOM_CONST_B = (1 + MIE_G2);
+  var MIE_DENOM_CONST_C = 2 * MIE_G;
+  var MIE_CONST_1 = MIE_SCALE * MIE_NUM_CONST / MIE_DENOM_CONST_A;
+
   function rayleighPhase(cosAngle) {
-    return (3 * (1 + cosAngle * cosAngle)) / (16 * PI);
+    return RAYLEIGH_CONST * (1 + cosAngle * cosAngle);
   }
 
   function miePhase(cosAngle) {
-    var g = 0.8;
-    var scale = 3 / (8 * PI);
-    var num = (1 - Math.pow(g, 2)) * (1 + cosAngle * cosAngle);
-    var denom = (2 + Math.pow(g, 2)) * Math.pow(1 + Math.pow(g, 2) - 2 * g * cosAngle, 3 / 2);
-    return (scale * num) / denom;
+    // scale * num / denom
+    // num = MIE_NUM_CONST * (1 + cos^2)
+    // denom = MIE_DENOM_CONST_A * (1 + g^2 - 2g*cos)^1.5
+    // result = (scale * num / denom_A) / (...)
+    // MIE_CONST_1 = scale * num_const / denom_A
+    return (MIE_CONST_1 * (1 + cosAngle * cosAngle)) / Math.pow(MIE_DENOM_CONST_B - MIE_DENOM_CONST_C * cosAngle, 1.5);
   }
 
   // Pre-allocate arrays to reduce garbage collection in hot loops
@@ -102,16 +117,23 @@
       var lenPos = Math.sqrt(posX * posX + posY * posY);
       var h = lenPos - GROUND_RADIUS;
 
-      var dR = Math.exp(-h / RAYLEIGH_SCALE_HEIGHT);
-      var dM = Math.exp(-h / MIE_SCALE_HEIGHT);
-      odRayleigh += dR * segmentLength;
+      // Optimization: Use precomputed inverse scale heights (multiplication > division)
+      // Optimization: Accumulate densities and multiply by segmentLength once at end
+      var dR = Math.exp(-h * RAYLEIGH_SCALE_HEIGHT_INV);
+      var dM = Math.exp(-h * MIE_SCALE_HEIGHT_INV);
+      odRayleigh += dR;
+      odMie += dM;
 
-      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) / 15e3, 1.0);
-      odOzone += ozoneDensity * segmentLength;
-      odMie += dM * segmentLength;
+      var ozoneDensity = 1.0 - Math.min(Math.abs(h - 25e3) * OZONE_SCALE_INV, 1.0);
+      odOzone += ozoneDensity;
 
       tCurrent += segmentLength;
     }
+
+    // Apply segmentLength once at the end to save N multiplications
+    odRayleigh *= segmentLength;
+    odMie *= segmentLength;
+    odOzone *= segmentLength;
 
     var tauR0 = RAYLEIGH_SCATTER[0] * odRayleigh;
     var tauR1 = RAYLEIGH_SCATTER[1] * odRayleigh;
