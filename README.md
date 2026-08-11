@@ -30,7 +30,7 @@ Embed a living day-to-night sky: blue midday, warm twilight, and stars after dar
 
 Also on npm via jsDelivr: `https://cdn.jsdelivr.net/npm/dynamic-sky@2/dynamic-sky.js`
 
-> Star/layer CSS is injected when the library loads. If [SunCalc](https://github.com/mourner/suncalc) is not already on the page, `init()` loads `suncalc@2.0.1` from jsDelivr.
+> Star/layer CSS is injected when the library loads. If [SunCalc](https://github.com/mourner/suncalc) is not already on the page, `init()` loads `suncalc@2.0.1` from jsDelivr (`/+esm`).
 
 ### Manual download
 
@@ -38,7 +38,14 @@ Also on npm via jsDelivr: `https://cdn.jsdelivr.net/npm/dynamic-sky@2/dynamic-sk
 <script src="path/to/dynamic-sky.js"></script>
 ```
 
-Optional explicit SunCalc: `<script src="https://cdn.jsdelivr.net/npm/suncalc@2.0.1"></script>`
+Optional explicit SunCalc:
+
+```html
+<script type="module">
+  import * as SunCalc from 'https://cdn.jsdelivr.net/npm/suncalc@2.0.1/+esm';
+  window.SunCalc = SunCalc;
+</script>
+```
 
 ---
 
