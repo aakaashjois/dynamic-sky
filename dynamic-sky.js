@@ -2,7 +2,7 @@
  *   <script src="https://cdn.jsdelivr.net/gh/aakaashjois/dynamic-sky@main/dynamic-sky.js"></script>
  *   <script>
  *     const sky = new DynamicSky();
- *     sky.init(); // loads SunCalc from jsDelivr if missing
+ *     sky.init(); // loads SunCalc (jsDelivr ESM) if missing
  *   </script>
  *
  * @version 2.1.0
@@ -95,26 +95,21 @@
     document.head.appendChild(style);
   }
 
-  // SunCalc via recommended browser bundle: https://github.com/mourner/suncalc#install
+  // SunCalc 2.x ESM — jsDelivr's UMD (.cjs) is served as application/node and blocked by nosniff.
+  var SUNCALC_ESM = 'https://cdn.jsdelivr.net/npm/suncalc@2.0.1/+esm';
   var sunCalcReadyPromise = null;
+  function hasSunCalc() {
+    return !!(global.SunCalc && typeof global.SunCalc.getPosition === 'function');
+  }
   function ensureSunCalc() {
-    if (typeof global.SunCalc !== 'undefined') return Promise.resolve();
+    if (hasSunCalc()) return Promise.resolve();
     if (sunCalcReadyPromise) return sunCalcReadyPromise;
     if (typeof document === 'undefined') {
       return Promise.reject(new Error('SunCalc missing'));
     }
-    sunCalcReadyPromise = new Promise(function (resolve, reject) {
-      var script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/suncalc@2.0.1';
-      script.async = true;
-      script.onload = function () {
-        if (typeof global.SunCalc !== 'undefined') resolve();
-        else reject(new Error('SunCalc global missing after load'));
-      };
-      script.onerror = function () {
-        reject(new Error('Failed to load https://cdn.jsdelivr.net/npm/suncalc@2.0.1'));
-      };
-      (document.head || document.body).appendChild(script);
+    sunCalcReadyPromise = import(SUNCALC_ESM).then(function (mod) {
+      global.SunCalc = mod;
+      if (!hasSunCalc()) throw new Error('SunCalc export missing after load');
     });
     return sunCalcReadyPromise;
   }
