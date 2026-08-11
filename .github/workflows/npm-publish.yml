@@ -3,6 +3,12 @@ name: Sync Version & Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 2.1.0). Do not bump package.json in git; this workflow sets it from the release tag or this input.'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,13 +18,23 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      # Sync the version number again
-      - run: npm version ${GITHUB_REF_NAME#v} --no-git-tag-version
+      # package.json in git is not the published version. Release tag / dispatch input is.
+      - env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${RELEASE_TAG:-$DISPATCH_VERSION}"
+          VERSION="${VERSION#v}"
+          if [ -z "$VERSION" ]; then
+            echo "No version from release tag or dispatch input" >&2
+            exit 1
+          fi
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
       - run: npm publish --provenance --access public

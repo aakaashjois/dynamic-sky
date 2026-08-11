@@ -1,6 +1,6 @@
 {
   "name": "dynamic-sky",
-  "version": "2.1.0",
+  "version": "0.0.0",
   "description": "Dynamic sky backgrounds with atmospheric scattering and starfields (vanilla JS)",
   "main": "dynamic-sky.js",
   "files": [
