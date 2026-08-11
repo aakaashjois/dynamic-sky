@@ -1,0 +1,11 @@
+{
+  "name": "Dynamic Sky",
+  "short_name": "Dynamic Sky",
+  "icons": [
+    { "src": "/favicon-48x48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#0B1F3A",
+  "background_color": "#0B1F3A",
+  "display": "standalone"
+}
