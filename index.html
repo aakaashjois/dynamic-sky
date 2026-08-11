@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://ipwho.is; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://ipwho.is; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
     <title>Dynamic Sky</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="32x32">
     <!-- Copyright 2026 Aakaash Jois -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" integrity="sha384-wFjoQjtV1y5jVHbt0p35Ui8aV8GVpEZkyF99OXWqP/eNJDU93D3Ugxkoyh6Y2I4A" crossorigin="anonymous">
     <style>
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -451,9 +450,7 @@ body{
 }
 .desk.install-panel .code-block{margin:0;max-width:100%;min-width:0}
 .desk.install-panel .code-block pre,
-.desk.install-panel .code-block pre[class*="language-"],
-.desk.install-panel .code-block code,
-.desk.install-panel .code-block code[class*="language-"]{
+.desk.install-panel .code-block code{
   white-space:pre-wrap !important;
   overflow-wrap:anywhere;
   word-break:break-word;
@@ -586,14 +583,12 @@ body{
   outline:2px solid var(--accent);outline-offset:3px;
 }
 .code-block{position:relative;margin:.75rem 0;min-width:0;max-width:100%}
-.code-block pre,
-.code-block pre[class*="language-"]{
+.code-block pre{
   background:var(--code-surface)!important;border:1px solid var(--silver-edge);border-radius:var(--radius-xs);
   padding:1.25rem;overflow-x:auto;margin:0;max-width:100%;
-  font-family:var(--font-mono);font-size:.85rem;line-height:1.6;
+  font-family:var(--font-mono);font-size:.85rem;line-height:1.6;color:var(--text-secondary);
 }
-.code-block.dense pre,
-.code-block.dense pre[class*="language-"]{font-size:.8rem;padding:1rem}
+.code-block.dense pre{font-size:.8rem;padding:1rem}
 .copy-btn{
   position:absolute;top:.5rem;right:.5rem;z-index:5;padding:4px 8px;border-radius:var(--radius-xs);
   border:1px solid var(--silver-edge);background:rgba(232,236,242,.1);color:var(--text-secondary);
@@ -614,13 +609,6 @@ body{
 .code-accordion-content{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--ease-out)}
 .code-accordion-content.expanded{grid-template-rows:1fr}
 .code-accordion-content>.code-block{min-height:0;overflow:hidden;margin-top:.4rem}
-.code-block .token.comment{color:rgba(226,232,240,.48)}
-.code-block .token.punctuation{color:rgba(226,232,240,.72)}
-.code-block .token.property,.code-block .token.tag,.code-block .token.boolean,.code-block .token.number,.code-block .token.constant{color:#f92672}
-.code-block .token.selector,.code-block .token.attr-name,.code-block .token.string,.code-block .token.char{color:#a6e22e}
-.code-block .token.atrule,.code-block .token.attr-value,.code-block .token.keyword{color:#66d9ef}
-.code-block .token.function,.code-block .token.class-name{color:#e6db74}
-.code-block .token.variable{color:#fd971f}
 .site-footer{
   position:relative;z-index:4;text-align:center;
   padding:3rem 1rem 2.5rem;
@@ -883,7 +871,7 @@ html.motion-static .copyright{
     <section class="install" id="install">
         <div>
             <h2 class="section-title">Install</h2>
-            <p class="section-lead">One script from jsDelivr. Two containers. The sky handles the rest.</p>
+                <p class="section-lead">One script from jsDelivr. Two containers. The sky handles the rest.</p>
             <div class="cap-ticks">
                 <span class="chip tilt-a">Scattering</span>
                 <span class="chip tilt-b">Starfield</span>
@@ -894,7 +882,7 @@ html.motion-static .copyright{
         </div>
         <div class="desk install-panel tilt-b">
             <div class="code-block">
-                <pre><code class="language-markup">&lt;script src="https://cdn.jsdelivr.net/gh/aakaashjois/dynamic-sky@main/dynamic-sky.js"&gt;&lt;/script&gt;
+                <pre><code>&lt;script src="https://cdn.jsdelivr.net/gh/aakaashjois/dynamic-sky@main/dynamic-sky.js"&gt;&lt;/script&gt;
 &lt;div id="background-sky"&gt;&lt;/div&gt;
 &lt;div id="stars-container"&gt;&lt;/div&gt;
 &lt;script&gt;
@@ -924,7 +912,7 @@ html.motion-static .copyright{
                                 <h4>Custom container</h4>
                                 <div class="code-accordion">
                                     <button type="button" class="code-accordion-header" aria-expanded="false"><span>Code</span></button>
-                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code class="language-markup">const sky = new DynamicSky({
+                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code>const sky = new DynamicSky({
   skyContainer: '#my-sky',
   starsContainer: '#my-stars',
   latitude: 40.7128,
@@ -937,7 +925,7 @@ sky.init();</code></pre></div></div>
                                 <h4>Programmatic control</h4>
                                 <div class="code-accordion">
                                     <button type="button" class="code-accordion-header" aria-expanded="false"><span>Code</span></button>
-                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code class="language-markup">const sky = new DynamicSky();
+                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code>const sky = new DynamicSky();
 sky.init().then(() =&gt; {
   sky.updateSky(sky.minutesToDate(720));
 });</code></pre></div></div>
@@ -947,7 +935,7 @@ sky.init().then(() =&gt; {
                                 <h4>Dynamic location</h4>
                                 <div class="code-accordion">
                                     <button type="button" class="code-accordion-header" aria-expanded="false"><span>Code</span></button>
-                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code class="language-markup">const sky = new DynamicSky();
+                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code>const sky = new DynamicSky();
 sky.init().then(() =&gt; {
   sky.setLocation(35.6762, 139.6503);
   sky.updateSky(new Date());
@@ -958,7 +946,7 @@ sky.init().then(() =&gt; {
                                 <h4>Auto-updating</h4>
                                 <div class="code-accordion">
                                     <button type="button" class="code-accordion-header" aria-expanded="false"><span>Code</span></button>
-                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code class="language-markup">const sky = new DynamicSky();
+                                    <div class="code-accordion-content"><div class="code-block dense"><pre><code>const sky = new DynamicSky();
 sky.init().then(() =&gt; {
   const tick = () =&gt; sky.updateSky(new Date());
   tick();
@@ -974,96 +962,78 @@ sky.init().then(() =&gt; {
     </section>
 
     <script src="dynamic-sky.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js" integrity="sha384-MXybTpajaBV0AkcBaCPT4KIvo0FzoCiWXgcihYsw4FUkEz0Pv3JGV6tk2G8vJtDc" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha384-Uq05+JLko69eOiPr39ta9bh7kld5PKZoU+fF7g0EXTAriEollhZ+DrN8Q/Oi8J2Q" crossorigin="anonymous"></script>
     <script>
-        // Helper function to format time
         function formatTime(minutes) {
-            // Handle 1440 (24 hours) as 12:00 AM
             if (minutes >= 1440) minutes = 0;
             const hours = Math.floor(minutes / 60);
             const mins = minutes % 60;
             const ampm = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours % 12 || 12;
-            return `${displayHours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} ${ampm}`;
+            return `${(hours % 12 || 12).toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} ${ampm}`;
         }
-        
-        // Location data for Travel (pinned time, changing place)
-        const locations = {
+
+        // ponytail: one city table for compare + travel
+        const CITIES = {
+            'san-francisco': { lat: 37.7749, lng: -122.4194, name: 'San Francisco' },
             'new-york': { lat: 40.7128, lng: -74.0060, name: 'New York', coords: '40.71N, 74.01W' },
             'tokyo': { lat: 35.6762, lng: 139.6503, name: 'Tokyo', coords: '35.68N, 139.65E' },
             'london': { lat: 51.5074, lng: -0.1278, name: 'London', coords: '51.51N, 0.13W' },
             'sydney': { lat: -33.8688, lng: 151.2093, name: 'Sydney', coords: '33.87S, 151.21E' }
         };
+        const COMPARE_IDS = ['san-francisco', 'new-york', 'tokyo', 'london'];
 
-        // Initialize background sky - starts with current live time
+        // ponytail: shared scrub binder for demo skies
+        function bindScrub(skies, slider, opts) {
+            skies = Array.isArray(skies) ? skies : [skies];
+            const paint = () => {
+                let minutes = parseInt(slider.value, 10);
+                if (minutes >= 1440) minutes = 0;
+                const date = skies[0].minutesToDate(minutes);
+                const timeString = formatTime(minutes);
+                if (opts.timeEl) opts.timeEl.textContent = timeString;
+                if (opts.consoleEl) opts.consoleEl.textContent = timeString;
+                if (opts.readoutEl) opts.readoutEl.innerHTML = timeString + '<span>' + opts.readoutLabel + '</span>';
+                slider.setAttribute('aria-valuetext', timeString);
+                if (opts.progress) slider.style.setProperty('--progress', (minutes / 1440) * 100 + '%');
+                skies.forEach((sky) => sky.updateSky(date));
+            };
+            slider.addEventListener('input', () => {
+                if (opts.beforeInput) opts.beforeInput();
+                paint();
+            });
+            return paint;
+        }
+
         const backgroundSky = new DynamicSky({
             skyContainer: '#background-sky',
             starsContainer: '#stars-container'
         });
-        
         backgroundSky.init().then(() => {
-            const backgroundSlider = document.getElementById('background-slider');
-            const backgroundTimeDisplay = document.getElementById('background-time');
-
-            function updateBackgroundSky() {
-                let minutes = parseInt(backgroundSlider.value, 10);
-                if (minutes >= 1440) minutes = 0;
-                const date = backgroundSky.minutesToDate(minutes);
-                const timeString = formatTime(minutes);
-                backgroundTimeDisplay.textContent = timeString;
-                backgroundSlider.setAttribute('aria-valuetext', timeString);
-                backgroundSky.updateSky(date);
-            }
-
-            backgroundSlider.addEventListener('input', updateBackgroundSky);
-
-            const now = new Date();
-            const currentMinutes = backgroundSky.dateToMinutes(now);
-            backgroundSlider.value = currentMinutes;
-            const initialTimeString = formatTime(currentMinutes);
-            backgroundTimeDisplay.textContent = initialTimeString;
-            backgroundSlider.setAttribute('aria-valuetext', initialTimeString);
-            backgroundSky.updateSky(now);
-            backgroundSlider.dispatchEvent(new Event('input', { bubbles: true }));
+            const slider = document.getElementById('background-slider');
+            const paint = bindScrub(backgroundSky, slider, {
+                timeEl: document.getElementById('background-time'),
+                consoleEl: document.getElementById('console-time')
+            });
+            slider.value = backgroundSky.dateToMinutes(new Date());
+            paint();
         });
-        
-        // Product chrome — embedded sky with scrubbable time
+
         const productSky = new DynamicSky({
             skyContainer: '#product-sky',
             starsContainer: '#product-stars'
         });
-
         productSky.init().then(() => {
             const slider = document.getElementById('product-slider');
-            const timeDisplay = document.getElementById('product-time');
-            const readout = document.getElementById('product-readout');
-
-            function updateProductSky() {
-                let minutes = parseInt(slider.value, 10);
-                if (minutes >= 1440) minutes = 0;
-                const date = productSky.minutesToDate(minutes);
-                const timeString = formatTime(minutes);
-                timeDisplay.textContent = timeString;
-                slider.setAttribute('aria-valuetext', timeString);
-                readout.innerHTML = timeString + '<span>Sky time</span>';
-                productSky.updateSky(date);
-            }
-
-            slider.addEventListener('input', updateProductSky);
+            const paint = bindScrub(productSky, slider, {
+                timeEl: document.getElementById('product-time'),
+                readoutEl: document.getElementById('product-readout'),
+                readoutLabel: 'Sky time'
+            });
             slider.value = 1080;
-            updateProductSky();
+            paint();
         });
 
-        // Four cities — locations pinned, one shared time scrub
-        const comparisonLocations = [
-            { lat: 37.7749, lng: -122.4194, name: 'San Francisco' },
-            { lat: 40.7128, lng: -74.0060, name: 'New York' },
-            { lat: 35.6762, lng: 139.6503, name: 'Tokyo' },
-            { lat: 51.5074, lng: -0.1278, name: 'London' }
-        ];
-
-        const comparisonSkies = comparisonLocations.map((loc, index) => {
+        const comparisonSkies = COMPARE_IDS.map((id, index) => {
+            const loc = CITIES[id];
             return new DynamicSky({
                 skyContainer: `#compare-${index + 1}-sky`,
                 starsContainer: `#compare-${index + 1}-stars`,
@@ -1074,7 +1044,6 @@ sky.init().then(() =&gt; {
 
         Promise.all(comparisonSkies.map((sky) => sky.init())).then(() => {
             const slider = document.getElementById('compare-slider');
-            const timeDisplay = document.getElementById('compare-time');
             const citiesSection = document.getElementById('cities-example');
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
             // ponytail: timer only while auto + on-screen; clearInterval on stop
@@ -1082,39 +1051,23 @@ sky.init().then(() =&gt; {
             let onScreen = false;
             let timer = 0;
 
-            function paint() {
-                let minutes = parseInt(slider.value, 10);
-                if (minutes >= 1440) minutes = 0;
-                const date = comparisonSkies[0].minutesToDate(minutes);
-                const timeString = formatTime(minutes);
-                timeDisplay.textContent = timeString;
-                slider.setAttribute('aria-valuetext', timeString);
-                slider.style.setProperty('--progress', (minutes / 1440) * 100 + '%');
-                comparisonSkies.forEach((sky) => sky.updateSky(date));
-            }
-
-            function stopAutoTick() {
-                if (!timer) return;
-                clearInterval(timer);
-                timer = 0;
-            }
-
-            function armAutoTick() {
+            const stopAutoTick = () => { if (timer) { clearInterval(timer); timer = 0; } };
+            const killAuto = () => { auto = false; stopAutoTick(); };
+            const paint = bindScrub(comparisonSkies, slider, {
+                timeEl: document.getElementById('compare-time'),
+                progress: true,
+                beforeInput: killAuto
+            });
+            const armAutoTick = () => {
                 stopAutoTick();
                 if (!auto || !onScreen || document.hidden || reduceMotion.matches) return;
                 timer = setInterval(() => {
                     slider.value = (parseInt(slider.value, 10) + 12) % 1440;
                     paint();
                 }, 100);
-            }
-
-            function killAuto() {
-                auto = false;
-                stopAutoTick();
-            }
+            };
 
             slider.addEventListener('pointerdown', killAuto);
-            slider.addEventListener('input', () => { killAuto(); paint(); });
             slider.value = 600;
             paint();
 
@@ -1129,14 +1082,13 @@ sky.init().then(() =&gt; {
             document.addEventListener('visibilitychange', armAutoTick);
         });
 
-        // Travel — time pinned, location/longitude changes
         let currentTravelLocation = 'new-york';
-        const PINNED_TRAVEL_MINUTES = 960; // 4:00 PM scene time
+        const PINNED_TRAVEL_MINUTES = 960;
         const travelSky = new DynamicSky({
             skyContainer: '#travel-sky',
             starsContainer: '#travel-stars',
-            latitude: locations[currentTravelLocation].lat,
-            longitude: locations[currentTravelLocation].lng
+            latitude: CITIES[currentTravelLocation].lat,
+            longitude: CITIES[currentTravelLocation].lng
         });
 
         travelSky.init().then(() => {
@@ -1147,7 +1099,7 @@ sky.init().then(() =&gt; {
             const pinnedLabel = formatTime(PINNED_TRAVEL_MINUTES);
 
             function renderTravel() {
-                const loc = locations[currentTravelLocation];
+                const loc = CITIES[currentTravelLocation];
                 place.textContent = loc.name;
                 coords.textContent = loc.coords;
                 readout.innerHTML = pinnedLabel + '<span>Pinned time</span>';
@@ -1205,17 +1157,6 @@ sky.init().then(() =&gt; {
                 slider.addEventListener('pointercancel', off);
                 slider.addEventListener('blur', off);
             });
-
-            const bgSlider = document.getElementById('background-slider');
-            const bgTime = document.getElementById('background-time');
-            const consoleTime = document.getElementById('console-time');
-            if (bgSlider && bgTime && consoleTime) {
-                const sync = () => { consoleTime.textContent = bgTime.textContent; };
-                bgSlider.addEventListener('input', sync);
-                const obs = new MutationObserver(sync);
-                obs.observe(bgTime, { childList: true, characterData: true, subtree: true });
-                sync();
-            }
 
             const moreBtn = document.querySelector('.more-toggle');
             const morePanel = document.querySelector('.more-panel');

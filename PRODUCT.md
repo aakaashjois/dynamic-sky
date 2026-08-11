@@ -16,12 +16,12 @@ Dynamic Sky renders physically grounded day/night sky atmospheres for the web â€
 
 ## Positioning
 
-The immersive homepage demo is the primary product surface; the published vanilla JS library is how that experience ships into other projects. Neighboring tools can fake a static gradient; this product earns trust by making the sky respond to real time and place, with night stars and continuous day-cycle control, in plain JavaScript.
+The immersive homepage demo is the primary product surface; the published vanilla JS library is how that experience ships into other projects. Neighboring tools can fake a static gradient; this product earns trust by making the sky respond to real time and place, with night stars, in plain JavaScript.
 
 ## Operating Context
 
 - Developers open the live site (or local `index.html`) to scrub the hero Time Desk, then walk Product chrome, Four cities, and Travel demos before copying the Install snippet or opening Code snippets.
-- Integration path: include `dynamic-sky.js` (CDN/jsDelivr or local), provide or auto-create sky/star containers, call `init()` / `updateSky()`, optionally connect a custom slider via helper converters.
+- Integration path: include `dynamic-sky.js` (CDN/jsDelivr or local), provide or auto-create sky/star containers, call `init()` / `updateSky(date)`. Own any time UI; optional minute helpers map scrubbers to `Date`.
 - Location can be auto-detected (IP geolocation) or set manually; sun position depends on SunCalc.
 - Authoring/evaluation happens in modern browsers; no build step is required for the library itself.
 
@@ -40,16 +40,16 @@ Main demo path (in order):
 
 Confirmed capabilities:
 - Physically-based sky gradient rendering (single-scattering approximation)
-- Multi-layer parallax starfield with twilight fade and time-based rotation (stars are decorative, not astronomical)
-- Time control via API helpers (minutes / percent / hours â†” Date)
+- Multi-layer starfield with twilight fade and time-based rotation (decorative, not a star catalog)
+- Time via `updateSky(date)`; optional `minutesToDate` / `dateToMinutes` for minute-based UIs
 - Location awareness (auto IP or manual lat/long)
-- Zero-config defaults; CSS injected by the library
+- Defaults that work with two containers; CSS injected by the library
 - Demo site with interactive examples and copyable install / snippet patterns
 
 Constraints:
 - Vanilla JavaScript, single-file distribution (`dynamic-sky.js`); no framework requirement
-- Bring-your-own slider / controls for custom UIs
-- Depends on SunCalc for solar position; IP geolocation via configurable API (default `ipwho.is`)
+- Bring-your-own time controls; library paints atmosphere only
+- Depends on SunCalc for solar position; IP geolocation via `ipwho.is`
 - License on package metadata: Apache-2.0
 - Homepage: https://dynamic-sky.aakaashjois.com
 - Open: whether library ergonomics ever outrank demo craft in future prioritization (user confirmed demo-first for now)

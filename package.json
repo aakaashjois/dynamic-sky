@@ -1,7 +1,7 @@
 {
   "name": "dynamic-sky",
-  "version": "0.0.0",
-  "description": "A beautiful vanilla JavaScript library for rendering dynamic sky backgrounds with realistic atmospheric scattering, animated starfields, and seamless time control",
+  "version": "2.1.0",
+  "description": "Dynamic sky backgrounds with atmospheric scattering and starfields (vanilla JS)",
   "main": "dynamic-sky.js",
   "files": [
     "dynamic-sky.js",
@@ -21,18 +21,11 @@
     "atmospheric-scattering",
     "starfield",
     "day-night-cycle",
-    "sky-animation",
-    "background-generator",
-    "physics-based-rendering",
-    "vanilla-javascript",
-    "sky-visualization",
-    "time-control",
-    "location-based",
-    "astronomical",
-    "celestial",
-    "sun-position",
-    "twilight",
     "sky-gradient",
+    "twilight",
+    "sun-position",
+    "location-based",
+    "vanilla-javascript",
     "web-background"
   ],
   "jsdelivr": "dynamic-sky.js"
