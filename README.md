@@ -6,6 +6,8 @@
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JS-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![jsDelivr](https://data.jsdelivr.com/v1/package/npm/dynamic-sky/badge?style=rounded)](https://www.jsdelivr.com/package/npm/dynamic-sky)
 
+<a href="https://www.producthunt.com/products/dynamic-sky?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-dynamic-sky" target="_blank" rel="noopener noreferrer"><img alt="Dynamic Sky - A living sky background for websites in vanilla JS | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1220837&amp;theme=light&amp;t=1786490584584"></a>
+
 Embed a living day-to-night sky: blue midday, warm twilight, and stars after dark — all from a `Date` and coordinates.
 
 ---
